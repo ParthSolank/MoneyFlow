@@ -33,3 +33,29 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# dotnet
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.sln.docstates
+.vs/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+api/build_output.txt
+api/errors.txt
+api/build_log*.txt
+api/build_error.log
+api/build-output.txt
+api/Properties/launchSettings.json
+api/appsettings.Development.json
