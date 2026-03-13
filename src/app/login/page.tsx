@@ -194,6 +194,18 @@ export default function LoginPage() {
           </CardFooter>
         </Card>
       </motion.div>
+
+      {/* Floating Watermark */}
+      <div className="fixed bottom-6 right-6 pointer-events-none z-50 opacity-20 hover:opacity-100 transition-opacity duration-500">
+          <div className="bg-white/40 shadow-sm backdrop-blur-[2px] border border-gray-200/50 px-3 py-1.5 rounded-full flex items-center gap-2 ring-1 ring-black/5">
+              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] text-white font-black shadow-sm">
+                  P
+              </div>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] whitespace-nowrap">
+                  Design & Dev by <span className="text-indigo-600/50">Parth</span>
+              </span>
+          </div>
+      </div>
     </div>
   );
 }

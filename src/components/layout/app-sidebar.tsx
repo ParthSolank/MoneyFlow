@@ -136,6 +136,25 @@ export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle
             <LogOut className="w-5 h-5 shrink-0" />
             {isExpanded && <span className="text-sm font-bold">Sign Out</span>}
           </button>
+
+          <div className={cn(
+            "mt-2 mb-2 px-2 py-3 rounded-xl border border-dashed border-gray-100 flex items-center gap-2 overflow-hidden bg-gray-50/50",
+            !isExpanded && "justify-center"
+          )}>
+            <div className="w-6 h-6 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 border border-indigo-200 uppercase">
+              P
+            </div>
+            {isExpanded && (
+              <motion.div 
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex flex-col"
+              >
+                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Crafted with ❤️</span>
+                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest whitespace-nowrap">By Parth Solanki</span>
+              </motion.div>
+            )}
+          </div>
         </div>
       </aside>
     </TooltipProvider>
