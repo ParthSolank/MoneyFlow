@@ -8,27 +8,25 @@ public class LedgerService
 {
     private readonly MoneyFlowDbContext _context;
     private readonly UserContext _userContext;
+    private readonly AuditLogService _auditLog;
 
-    public LedgerService(MoneyFlowDbContext context, UserContext userContext)
+    public LedgerService(MoneyFlowDbContext context, UserContext userContext, AuditLogService auditLog)
     {
         _context = context;
         _userContext = userContext;
+        _auditLog = auditLog;
     }
 
     private IQueryable<Ledger> GetBaseQuery()
     {
         var query = _context.Ledgers.Where(l => !l.IsDeleted);
         
-        // If user is not admin and has a company, filter by it
-        // Even admins should probably only see their selected company's ledgers in common UI
         if (_userContext.CompanyId.HasValue)
         {
             query = query.Where(l => l.CompanyId == _userContext.CompanyId.Value);
         }
         else if (_userContext.Role != "Admin")
         {
-            // If not admin and no company selected, they shouldn't see anything?
-            // Or maybe show nothing.
             query = query.Where(l => false);
         }
         
@@ -63,6 +61,8 @@ public class LedgerService
         _context.Ledgers.Add(ledger);
         await _context.SaveChangesAsync();
         
+        await _auditLog.LogAsync("Create", "Ledger", $"Created ledger '{ledger.Name}' with balance {ledger.Balance}. ID: {ledger.Id}");
+        
         return await GetByIdAsync(ledger.Id) ?? ledger;
     }
 
@@ -73,6 +73,8 @@ public class LedgerService
         if (existing == null)
             return false;
 
+        string summary = $"Updated ledger '{existing.Name}'. Balance: {existing.Balance}->{updatedLedger.Balance}";
+
         existing.Name = updatedLedger.Name;
         existing.Description = updatedLedger.Description;
         existing.Balance = updatedLedger.Balance;
@@ -81,6 +83,7 @@ public class LedgerService
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Update", "Ledger", summary);
         return true;
     }
 
@@ -91,10 +94,12 @@ public class LedgerService
         if (ledger == null)
             return false;
 
+        decimal oldBalance = ledger.Balance;
         ledger.Balance = newBalance;
         ledger.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Update_Balance", "Ledger", $"Balance adjustment for '{ledger.Name}': {oldBalance}->{newBalance}");
         return true;
     }
 
@@ -109,6 +114,8 @@ public class LedgerService
         ledger.DeletedAt = DateTime.UtcNow;
         _context.Ledgers.Update(ledger);
         await _context.SaveChangesAsync();
+        
+        await _auditLog.LogAsync("Delete", "Ledger", $"Soft-deleted ledger '{ledger.Name}'. ID: {id}");
         return true;
     }
 

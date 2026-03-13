@@ -68,6 +68,7 @@ export default function BudgetsPage() {
     const [year, setYear] = useState(new Date().getFullYear());
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -78,6 +79,7 @@ export default function BudgetsPage() {
     });
 
     useEffect(() => {
+        setMounted(true);
         fetchData();
     }, [month, year]);
 
@@ -134,6 +136,8 @@ export default function BudgetsPage() {
 
     const currentYear = new Date().getFullYear();
     const years = [currentYear - 1, currentYear, currentYear + 1];
+
+    if (!mounted) return null;
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-6xl space-y-8">

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MoneyFlowApi.Data;
 using MoneyFlowApi.Models;
+using MoneyFlowApi.Models.DTOs;
 using System.Data;
 using ExcelDataReader;
 using CsvHelper;
@@ -11,11 +12,13 @@ public class TransactionService
 {
     private readonly MoneyFlowDbContext _context;
     private readonly UserContext _userContext;
+    private readonly AuditLogService _auditLog;
 
-    public TransactionService(MoneyFlowDbContext context, UserContext userContext)
+    public TransactionService(MoneyFlowDbContext context, UserContext userContext, AuditLogService auditLog)
     {
         _context = context;
         _userContext = userContext;
+        _auditLog = auditLog;
     }
 
     private IQueryable<Transaction> GetBaseQuery()
@@ -34,12 +37,45 @@ public class TransactionService
         return query;
     }
 
-    // Get all transactions
-    public async Task<List<Transaction>> GetAllAsync() =>
-        await GetBaseQuery()
+    private async Task ValidateFinancialYearAsync(string date)
+    {
+        if (DateTime.TryParse(date, out DateTime parsedDate))
+        {
+            var closedFy = await _context.FinancialYears
+                .Where(fy => !fy.IsDeleted && fy.IsClosed && 
+                            parsedDate >= fy.StartDate && parsedDate <= fy.EndDate &&
+                            (fy.CompanyId == null || fy.CompanyId == _userContext.CompanyId))
+                .AnyAsync();
+
+            if (closedFy)
+            {
+                throw new InvalidOperationException("This operation is not allowed because the financial year for this date is closed.");
+            }
+        }
+    }
+
+    // Get all transactions with pagination
+    public async Task<PagedResult<Transaction>> GetAllAsync(int page = 1, int pageSize = 10)
+    {
+        var query = GetBaseQuery();
+        var totalCount = await query.CountAsync();
+        
+        var items = await query
             .Include(t => t.Ledger)
             .OrderByDescending(t => t.Date)
+            .ThenByDescending(t => t.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return new PagedResult<Transaction>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = page,
+            PageSize = pageSize
+        };
+    }
 
     // Get transaction by ID
     public async Task<Transaction?> GetByIdAsync(int id) =>
@@ -47,13 +83,27 @@ public class TransactionService
             .Include(t => t.Ledger)
             .FirstOrDefaultAsync(t => t.Id == id);
 
-    // Get transactions by ledger ID
-    public async Task<List<Transaction>> GetByLedgerIdAsync(int ledgerId) =>
-        await GetBaseQuery()
+    // Get transactions by ledger ID with pagination
+    public async Task<PagedResult<Transaction>> GetByLedgerIdAsync(int ledgerId, int page = 1, int pageSize = 10)
+    {
+        var query = GetBaseQuery().Where(t => t.LedgerId == ledgerId);
+        var totalCount = await query.CountAsync();
+        
+        var items = await query
             .Include(t => t.Ledger)
-            .Where(t => t.LedgerId == ledgerId)
             .OrderByDescending(t => t.Date)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return new PagedResult<Transaction>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = page,
+            PageSize = pageSize
+        };
+    }
 
     // Get transactions by type (income/expense)
     public async Task<List<Transaction>> GetByTypeAsync(string type) =>
@@ -80,58 +130,75 @@ public class TransactionService
             .OrderByDescending(t => t.Date)
             .ToListAsync();
 
+    private async Task UpdateLedgerBalanceAsync(int? ledgerId, decimal amount, string type, bool apply)
+    {
+        if (!ledgerId.HasValue) return;
+
+        bool isIncome = type == "income";
+        decimal adjustment = isIncome ? amount : -amount;
+        if (!apply) adjustment = -adjustment;
+
+        // Perform atomic update in database to prevent race conditions
+        await _context.Ledgers
+            .Where(l => l.Id == ledgerId.Value)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(l => l.Balance, l => l.Balance + adjustment)
+                .SetProperty(l => l.UpdatedAt, DateTime.UtcNow));
+    }
+
     // Create new transaction
     public async Task<Transaction> CreateAsync(Transaction transaction)
     {
+        if (!_userContext.CompanyId.HasValue && _userContext.Role != "Admin")
+            throw new InvalidOperationException("No company context selected.");
+
+        await ValidateFinancialYearAsync(transaction.Date);
+
         transaction.CreatedAt = DateTime.UtcNow;
         transaction.UpdatedAt = DateTime.UtcNow;
-        transaction.CompanyId = _userContext.CompanyId;
-        
-        var ledger = await _context.Ledgers.FirstOrDefaultAsync(l => l.Id == (transaction.LedgerId ?? 0));
-        UpdateLedgerBalance(ledger, transaction.Amount, transaction.Type, true);
+        transaction.CompanyId = transaction.CompanyId ?? _userContext.CompanyId;
 
-        _context.Transactions.Add(transaction);
-        await _context.SaveChangesAsync();
-        
-        return await GetByIdAsync(transaction.Id) ?? transaction;
+        using var dbTransaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // Validation: Check balance if expense (non-atomic check, but within transaction)
+            if (transaction.Type == "expense" && transaction.LedgerId.HasValue)
+            {
+                var ledger = await _context.Ledgers.FindAsync(transaction.LedgerId.Value);
+                if (ledger != null && ledger.AccountType != "credit" && ledger.Balance < transaction.Amount)
+                {
+                    throw new InvalidOperationException($"Insufficient balance in Ledger '{ledger.Name}'.");
+                }
+            }
+
+            _context.Transactions.Add(transaction);
+            await _context.SaveChangesAsync();
+            
+            await UpdateLedgerBalanceAsync(transaction.LedgerId, transaction.Amount, transaction.Type, true);
+
+            await _auditLog.LogAsync("Create", "Transaction", $"Created {transaction.Type} of {transaction.Amount}. ID: {transaction.Id}");
+            await dbTransaction.CommitAsync();
+
+            return await GetByIdAsync(transaction.Id) ?? transaction;
+        }
+        catch
+        {
+            await dbTransaction.RollbackAsync();
+            throw;
+        }
     }
 
-    // Specialized create for recurring tasks that bypasses the UserContext CompanyId (which is null in background thread)
+    // Specialized create for recurring tasks
     public async Task<Transaction> CreateAsyncForRecurring(Transaction transaction)
     {
-        var ledger = await _context.Ledgers.IgnoreQueryFilters().FirstOrDefaultAsync(l => l.Id == (transaction.LedgerId ?? 0));
-        UpdateLedgerBalance(ledger, transaction.Amount, transaction.Type, true);
-
         _context.Transactions.Add(transaction);
         await _context.SaveChangesAsync();
+        
+        await UpdateLedgerBalanceAsync(transaction.LedgerId, transaction.Amount, transaction.Type, true);
+        
+        await _auditLog.LogAsync("Create_Recurring", "Transaction", $"Automated recurring {transaction.Type} of {transaction.Amount}. ID: {transaction.Id}");
+        
         return transaction;
-    }
-
-    private void UpdateLedgerBalance(Ledger? ledger, decimal amount, string type, bool apply)
-    {
-        if (ledger == null) return;
-
-        bool isIncome = type == "income";
-        
-        // If applying an expense, check balance
-        if (apply && !isIncome && ledger.AccountType != "credit" && ledger.Balance < amount)
-        {
-            throw new InvalidOperationException($"Insufficient balance in Ledger '{ledger.Name}'. Available: {ledger.Balance}, Required: {amount}");
-        }
-
-        if (apply)
-        {
-            if (isIncome) ledger.Balance += amount;
-            else ledger.Balance -= amount;
-        }
-        else // Reverse
-        {
-            if (isIncome) ledger.Balance -= amount;
-            else ledger.Balance += amount;
-        }
-        
-        ledger.UpdatedAt = DateTime.UtcNow;
-        _context.Ledgers.Update(ledger);
     }
 
     // Update transaction
@@ -141,32 +208,42 @@ public class TransactionService
         if (existing == null)
             return false;
 
-        // 1. Reverse old ledger balance
-        if (existing.LedgerId.HasValue)
+        await ValidateFinancialYearAsync(existing.Date);
+        await ValidateFinancialYearAsync(updatedTransaction.Date);
+
+        using var dbTransaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            var oldLedger = await _context.Ledgers.IgnoreQueryFilters().FirstOrDefaultAsync(l => l.Id == existing.LedgerId.Value);
-            UpdateLedgerBalance(oldLedger, existing.Amount, existing.Type, false); // false means 'reverse'
+            // 1. Reverse old ledger balance
+            await UpdateLedgerBalanceAsync(existing.LedgerId, existing.Amount, existing.Type, false);
+
+            string changeSummary = $"Updated ID: {id}. Amount {existing.Amount}->{updatedTransaction.Amount}";
+
+            // 2. Update fields
+            existing.Description = updatedTransaction.Description;
+            existing.Amount = updatedTransaction.Amount;
+            existing.Date = updatedTransaction.Date;
+            existing.Type = updatedTransaction.Type;
+            existing.Category = updatedTransaction.Category;
+            existing.PaymentMethod = updatedTransaction.PaymentMethod;
+            existing.LedgerId = updatedTransaction.LedgerId;
+            existing.Currency = updatedTransaction.Currency ?? existing.Currency;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            // 3. Apply new ledger balance
+            await UpdateLedgerBalanceAsync(existing.LedgerId, existing.Amount, existing.Type, true);
+
+            await _auditLog.LogAsync("Update", "Transaction", changeSummary);
+            await dbTransaction.CommitAsync();
+            return true;
         }
-
-        // 2. Update fields
-        existing.Description = updatedTransaction.Description;
-        existing.Amount = updatedTransaction.Amount;
-        existing.Date = updatedTransaction.Date;
-        existing.Type = updatedTransaction.Type;
-        existing.Category = updatedTransaction.Category;
-        existing.PaymentMethod = updatedTransaction.PaymentMethod;
-        existing.LedgerId = updatedTransaction.LedgerId;
-        existing.UpdatedAt = DateTime.UtcNow;
-
-        // 3. Apply new ledger balance
-        if (existing.LedgerId.HasValue)
+        catch
         {
-            var newLedger = await _context.Ledgers.IgnoreQueryFilters().FirstOrDefaultAsync(l => l.Id == existing.LedgerId.Value);
-            UpdateLedgerBalance(newLedger, existing.Amount, existing.Type, true); // true means 'apply'
+            await dbTransaction.RollbackAsync();
+            throw;
         }
-
-        await _context.SaveChangesAsync();
-        return true;
     }
 
     // Delete transaction
@@ -176,19 +253,29 @@ public class TransactionService
         if (transaction == null)
             return false;
 
-        transaction.IsDeleted = true;
-        transaction.DeletedAt = DateTime.UtcNow;
-        _context.Transactions.Update(transaction);
+        await ValidateFinancialYearAsync(transaction.Date);
 
-        // Reverse balance
-        if (transaction.LedgerId.HasValue)
+        using var dbTransaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            var ledger = await _context.Ledgers.IgnoreQueryFilters().FirstOrDefaultAsync(l => l.Id == transaction.LedgerId.Value);
-            UpdateLedgerBalance(ledger, transaction.Amount, transaction.Type, false);
-        }
+            transaction.IsDeleted = true;
+            transaction.DeletedAt = DateTime.UtcNow;
+            _context.Transactions.Update(transaction);
 
-        await _context.SaveChangesAsync();
-        return true;
+            await _context.SaveChangesAsync();
+
+            // Reverse balance
+            await UpdateLedgerBalanceAsync(transaction.LedgerId, transaction.Amount, transaction.Type, false);
+
+            await _auditLog.LogAsync("Delete", "Transaction", $"Soft-deleted ID: {id}");
+            await dbTransaction.CommitAsync();
+            return true;
+        }
+        catch
+        {
+            await dbTransaction.RollbackAsync();
+            throw;
+        }
     }
 
     // Get total income
@@ -252,6 +339,11 @@ public class TransactionService
     {
         var records = new List<Transaction>();
         stream.Position = 0;
+
+        // Fetch all categories for auto-categorization
+        var allCategories = await _context.Categories
+            .Where(c => !c.IsDeleted && (c.CompanyId == null || c.CompanyId == _userContext.CompanyId))
+            .ToListAsync();
 
         if (extension == ".csv")
         {
@@ -335,24 +427,49 @@ public class TransactionService
                 }
                 else continue;
 
+                // Auto-categorization
+                string category = "misc";
+                string desc = descCol != -1 && row[descCol] != DBNull.Value ? (row[descCol]?.ToString() ?? "Imported") : "Imported";
+                
+                var matchedCategory = allCategories.FirstOrDefault(c => 
+                    !string.IsNullOrEmpty(c.Keywords) && 
+                    c.Keywords.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Any(k => desc.Contains(k.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+                if (matchedCategory != null)
+                {
+                    category = matchedCategory.Name;
+                }
+                else if (categoryCol != -1 && row[categoryCol] != DBNull.Value)
+                {
+                    category = row[categoryCol]?.ToString() ?? "misc";
+                }
+
                 records.Add(new Transaction
                 {
-                    Description = descCol != -1 && row[descCol] != DBNull.Value ? (row[descCol]?.ToString() ?? "Imported") : "Imported",
+                    Description = desc,
                     Amount = finalAmount,
                     Date = isDateValid ? parsedDate.ToString("yyyy-MM-dd") : DateTime.UtcNow.ToString("yyyy-MM-dd"),
                     Type = finalType,
-                    Category = categoryCol != -1 && row[categoryCol] != DBNull.Value ? (row[categoryCol]?.ToString() ?? "misc") : "misc",
+                    Category = category,
                     PaymentMethod = paymentMethodCol != -1 && row[paymentMethodCol] != DBNull.Value ? (row[paymentMethodCol]?.ToString()?.ToLower() ?? "bank") : "bank",
-                    LedgerId = ledgerId
+                    LedgerId = ledgerId,
+                    Currency = "INR"
                 });
             }
         }
 
+        int successCount = 0;
         foreach (var req in records)
         {
-            await CreateAsync(req);
+            try {
+                await CreateAsync(req);
+                successCount++;
+            } catch {
+                // Skip if closed FY or other error
+            }
         }
 
-        return records.Count;
+        return successCount;
     }
 }

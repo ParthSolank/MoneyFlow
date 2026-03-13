@@ -31,10 +31,10 @@ public class TransactionsController : ControllerBase
     // GET: api/transactions
     [AuthorizeRight("CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_DELETE")]
     [HttpGet]
-    public async Task<ActionResult<List<Transaction>>> GetAll()
+    public async Task<ActionResult<PagedResult<Transaction>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var transactions = await _transactionService.GetAllAsync();
-        return Ok(transactions);
+        var result = await _transactionService.GetAllAsync(page, pageSize);
+        return Ok(result);
     }
 
     // GET: api/transactions/{id}
@@ -52,10 +52,10 @@ public class TransactionsController : ControllerBase
     // GET: api/transactions/ledger/{ledgerId}
     [AuthorizeRight("CORE_TRANSACTIONS_VIEW")]
     [HttpGet("ledger/{ledgerId:int}")]
-    public async Task<ActionResult<List<Transaction>>> GetByLedgerId(int ledgerId)
+    public async Task<ActionResult<PagedResult<Transaction>>> GetByLedgerId(int ledgerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var transactions = await _transactionService.GetByLedgerIdAsync(ledgerId);
-        return Ok(transactions);
+        var result = await _transactionService.GetByLedgerIdAsync(ledgerId, page, pageSize);
+        return Ok(result);
     }
 
     // GET: api/transactions/type/{type}

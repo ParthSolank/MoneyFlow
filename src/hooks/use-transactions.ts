@@ -29,8 +29,11 @@ export function useTransactions(startDate?: string, endDate?: string) {
         }
     );
 
+    // Extract transactions array whether data is an Array or a PagedResult object
+    const transactionsList = data ? (Array.isArray(data) ? data : (data as any).items || []) : EMPTY_ARRAY;
+
     return {
-        transactions: data || EMPTY_ARRAY,
+        transactions: transactionsList,
         isLoading,
         isError: error,
         mutate

@@ -24,6 +24,9 @@ public class Category
     [MaxLength(20)]
     public string Color { get; set; } = "#6366f1";
 
+    [MaxLength(1000)]
+    public string? Keywords { get; set; } = string.Empty;
+
     public int? CompanyId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

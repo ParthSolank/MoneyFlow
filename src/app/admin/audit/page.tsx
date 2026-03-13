@@ -23,7 +23,7 @@ export default function SystemAuditPage() {
 
     useEffect(() => {
         if (currentUserProfile && !canView("ADMIN", "SYSTEM_AUDIT")) {
-            router.push("/");
+            router.replace("/");
         } else if (currentUserProfile) {
             loadAuditLogs();
         }

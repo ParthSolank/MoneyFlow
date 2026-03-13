@@ -40,7 +40,27 @@ public class UserContextMiddleware
             {
                 if (int.TryParse(companyIdStr, out int companyId) && companyId > 0)
                 {
-                    userContext.CompanyId = companyId;
+                    // SECURITY: Verify that this user has access to this company
+                    // Admins bypass this check
+                    if (userContext.Role == "Admin")
+                    {
+                        userContext.CompanyId = companyId;
+                    }
+                    else
+                    {
+                        var dbContext = context.RequestServices.GetRequiredService<MoneyFlowApi.Data.MoneyFlowDbContext>();
+                        var hasAccess = dbContext.Companies.Any(c => c.Id == companyId && c.OwnerUserId == userContext.UserId);
+                        
+                        if (hasAccess)
+                        {
+                            userContext.CompanyId = companyId;
+                        }
+                        else
+                        {
+                            // Optional: Log unauthorized access attempt
+                            // userContext.CompanyId remains null, query filters will return empty
+                        }
+                    }
                 }
             }
         }

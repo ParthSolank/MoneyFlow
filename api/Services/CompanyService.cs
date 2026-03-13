@@ -8,11 +8,13 @@ public class CompanyService
 {
     private readonly MoneyFlowDbContext _context;
     private readonly UserContext _userContext;
+    private readonly AuditLogService _auditLog;
 
-    public CompanyService(MoneyFlowDbContext context, UserContext userContext)
+    public CompanyService(MoneyFlowDbContext context, UserContext userContext, AuditLogService auditLog)
     {
         _context = context;
         _userContext = userContext;
+        _auditLog = auditLog;
     }
 
     private IQueryable<Company> GetBaseQuery()
@@ -47,6 +49,8 @@ public class CompanyService
         _context.Companies.Add(company);
         await _context.SaveChangesAsync();
 
+        await _auditLog.LogAsync("Create", "Company", $"Created company '{company.Name}'. ID: {company.Id}");
+        
         return company;
     }
 
@@ -54,6 +58,8 @@ public class CompanyService
     {
         var existing = await GetBaseQuery().FirstOrDefaultAsync(c => c.Id == id);
         if (existing == null) return false;
+
+        string summary = $"Updated company '{existing.Name}'";
 
         existing.Name = updated.Name;
         existing.Description = updated.Description;
@@ -66,6 +72,7 @@ public class CompanyService
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Update", "Company", summary);
         return true;
     }
 
@@ -78,6 +85,7 @@ public class CompanyService
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Delete", "Company", $"Soft-deleted company '{existing.Name}'. ID: {id}");
         return true;
     }
 }

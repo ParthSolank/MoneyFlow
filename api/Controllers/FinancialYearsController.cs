@@ -59,4 +59,12 @@ public class FinancialYearsController : ControllerBase
         await _auditLogService.LogAsync("DELETE", "FinancialYears", $"Deleted FY ID {id}.");
         return NoContent();
     }
+
+    [HttpPost("{id:int}/close")]
+    public async Task<IActionResult> Close(int id)
+    {
+        var success = await _fyService.CloseFinancialYearAsync(id);
+        if (!success) return NotFound();
+        return Ok(new { message = "Financial year closed successfully." });
+    }
 }

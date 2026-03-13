@@ -30,6 +30,10 @@ public class Ledger
     [MaxLength(20)]
     public string AccountType { get; set; } = string.Empty; // "bank" or "credit"
 
+    [Required]
+    [MaxLength(10)]
+    public string Currency { get; set; } = "INR";
+
     public int? CompanyId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

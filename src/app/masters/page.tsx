@@ -51,8 +51,10 @@ export default function MastersPage() {
     })
 
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
+        setMounted(true)
         fetchCompanies()
         fetchFYs()
     }, [])
@@ -402,7 +404,7 @@ export default function MastersPage() {
                                             <TableCell className="font-medium">{fy.name}</TableCell>
                                             <TableCell>
                                                 <div className="text-xs">
-                                                    {new Date(fy.startDate).toLocaleDateString()} - {new Date(fy.endDate).toLocaleDateString()}
+                                                    {mounted ? `${new Date(fy.startDate).toLocaleDateString()} - ${new Date(fy.endDate).toLocaleDateString()}` : 'Loading dates...'}
                                                 </div>
                                             </TableCell>
                                             <TableCell>

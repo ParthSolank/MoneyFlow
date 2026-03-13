@@ -8,11 +8,13 @@ public class FinancialYearService
 {
     private readonly MoneyFlowDbContext _context;
     private readonly UserContext _userContext;
+    private readonly AuditLogService _auditLog;
 
-    public FinancialYearService(MoneyFlowDbContext context, UserContext userContext)
+    public FinancialYearService(MoneyFlowDbContext context, UserContext userContext, AuditLogService auditLog)
     {
         _context = context;
         _userContext = userContext;
+        _auditLog = auditLog;
     }
 
     private IQueryable<FinancialYear> GetBaseQuery()
@@ -55,6 +57,8 @@ public class FinancialYearService
 
         _context.FinancialYears.Add(fy);
         await _context.SaveChangesAsync();
+        
+        await _auditLog.LogAsync("Create", "FinancialYear", $"Created financial year '{fy.Name}' ({fy.StartDate:yyyy-MM-dd} to {fy.EndDate:yyyy-MM-dd}). ID: {fy.Id}");
 
         return fy;
     }
@@ -64,6 +68,8 @@ public class FinancialYearService
         var existing = await GetBaseQuery().FirstOrDefaultAsync(f => f.Id == id);
         if (existing == null) return false;
 
+        string summary = $"Updated financial year '{existing.Name}'";
+
         existing.Name = updated.Name;
         existing.StartDate = updated.StartDate;
         existing.EndDate = updated.EndDate;
@@ -72,6 +78,7 @@ public class FinancialYearService
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Update", "FinancialYear", summary);
         return true;
     }
 
@@ -84,6 +91,21 @@ public class FinancialYearService
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Delete", "FinancialYear", $"Soft-deleted financial year '{existing.Name}'. ID: {id}");
+        return true;
+    }
+
+    public async Task<bool> CloseFinancialYearAsync(int id)
+    {
+        var fy = await GetBaseQuery().FirstOrDefaultAsync(f => f.Id == id);
+        if (fy == null) return false;
+
+        fy.IsClosed = true;
+        fy.IsActive = false;
+        fy.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Close_FY", "FinancialYear", $"Closed financial year '{fy.Name}'. ID: {id}");
         return true;
     }
 }

@@ -5,6 +5,8 @@ interface RequestOptions extends RequestInit {
     headers?: Record<string, string>;
 }
 
+let isRedirecting = false;
+
 async function fetchWithAuth(url: string, options: RequestOptions = {}) {
     const isServer = typeof window === 'undefined';
     const token = isServer ? null : localStorage.getItem('token');
@@ -59,14 +61,16 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
                 // Refresh failed, logout
                 localStorage.removeItem('token');
                 localStorage.removeItem('refreshToken');
-                if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+                if (!isRedirecting && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+                    isRedirecting = true;
                     window.location.href = '/login';
                 }
                 throw new Error('Session expired');
             }
         } catch (refreshError: any) {
             // If refresh fails with 401 specifically, logout
-            if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            if (!isRedirecting && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+                isRedirecting = true;
                 localStorage.removeItem('token');
                 localStorage.removeItem('refreshToken');
                 window.location.href = '/login';

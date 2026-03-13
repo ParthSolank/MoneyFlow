@@ -43,10 +43,15 @@ builder.Services.AddControllers()
 
 // Configure JWT Authentication
 var secretKey = builder.Configuration["JwtSettings:Secret"] ?? builder.Configuration["JWT_SECRET"];
+
 if (string.IsNullOrEmpty(secretKey) || secretKey.Length < 32)
 {
-    // Generate a secure fallback for dev, but ideally production should mandate this.
-    secretKey = "SuperSecretKeyForDevelopmentOnlyPleaseChangeCurrently";
+    if (builder.Environment.IsProduction())
+    {
+        throw new InvalidOperationException("A secure JWT Secret (min 32 chars) must be configured in production!");
+    }
+    // Fallback for dev ONLY if absolutely necessary, but warn
+    secretKey ??= "SuperSecretKeyForDevelopmentOnlyPleaseChangeCurrently";
 }
 
 var key = Encoding.ASCII.GetBytes(secretKey);

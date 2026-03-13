@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserNav } from "@/components/user-nav";
@@ -12,15 +12,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const { user, companyId, loading } = useAuth();
+    const [mounted, setMounted] = useState(false);
+    
     const isAuthPage = pathname === "/login" || pathname === "/register";
 
     useEffect(() => {
-        if (!loading && !user && !isAuthPage) {
-            router.push("/login");
-        }
-    }, [user, loading, isAuthPage, router]);
+        setMounted(true);
+    }, []);
 
-    if (loading) {
+    useEffect(() => {
+        if (!loading && mounted) {
+            if (!user && !isAuthPage) {
+                router.replace("/login");
+            } else if (user && isAuthPage) {
+                router.replace("/");
+            }
+        }
+    }, [user, loading, isAuthPage, router, mounted]);
+
+    // Prevent hydration mismatch and flickering during initial load
+    if (!mounted || loading) {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-gray-50/30">
                 <div className="flex flex-col items-center gap-4">
@@ -35,7 +46,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return <main className="flex-1 h-screen w-full">{children}</main>;
     }
 
-    // Don't render shell if no user yet (will redirect in useEffect)
     if (!user) {
         return null;
     }

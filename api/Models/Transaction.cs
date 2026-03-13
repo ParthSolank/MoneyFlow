@@ -34,6 +34,10 @@ public class Transaction
     [MaxLength(20)]
     public string PaymentMethod { get; set; } = string.Empty; // "bank", "credit", or "cash"
 
+    [Required]
+    [MaxLength(10)]
+    public string Currency { get; set; } = "INR";
+
     public int? LedgerId { get; set; }
 
     [ForeignKey("LedgerId")]

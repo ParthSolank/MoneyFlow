@@ -7,6 +7,7 @@ public class FinancialYear
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsClosed { get; set; } = false;
     public string Description { get; set; } = string.Empty;
     public int? CompanyId { get; set; }
 

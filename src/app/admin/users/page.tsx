@@ -56,7 +56,7 @@ export default function UserManagementPage() {
 
     useEffect(() => {
         if (currentUserProfile && !canView("ADMIN", "USER_MANAGEMENT")) {
-            router.push("/");
+            router.replace("/");
         } else if (currentUserProfile) {
             loadUsers();
         }

@@ -59,7 +59,7 @@ export default function AccessControlPage() {
 
     useEffect(() => {
         if (currentUserProfile && currentUserProfile.role !== "Admin") {
-            router.push("/");
+            router.replace("/");
         } else if (currentUserProfile) {
             loadInitialData();
         }

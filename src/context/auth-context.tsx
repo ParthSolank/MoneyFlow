@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 
@@ -25,26 +24,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-// Helper function to decode JWT and get user data
 function getUserFromToken(token: string): User | null {
     try {
         const decoded: any = jwtDecode(token);
-
-        // ASP.NET Core often uses long URIs for claim types
-        const id = decoded.sub ||
-            decoded.nameid ||
-            decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
-
-        const username = decoded.unique_name ||
-            decoded.name ||
-            decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
-
-        const email = decoded.email ||
-            decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
-
-        const role = decoded.role ||
-            decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-
+        const id = decoded.sub || decoded.nameid || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+        const username = decoded.unique_name || decoded.name || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
+        const email = decoded.email || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
+        const role = decoded.role || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
         const rights = decoded.Right || decoded.rights || [];
         const rightsArray = Array.isArray(rights) ? rights : [rights];
 
@@ -58,7 +44,6 @@ function getUserFromToken(token: string): User | null {
             rights: rightsArray
         };
     } catch (error) {
-        console.error("Failed to decode token", error);
         return null;
     }
 }
@@ -66,12 +51,11 @@ function getUserFromToken(token: string): User | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [companyId, setCompanyIdState] = useState<number | null>(null);
     const router = useRouter();
 
     useEffect(() => {
-        // Check for token on mount
         const token = localStorage.getItem('token');
-        const refreshToken = localStorage.getItem('refreshToken');
         const storedCompanyId = localStorage.getItem('companyId');
 
         if (storedCompanyId) {
@@ -83,9 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (userData) {
                 setUser(userData);
             } else {
-                // Invalid token? Try to refresh or logout
-                // For simplicity, just logout if decoding fails
-                logout();
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
             }
         }
         setLoading(false);
@@ -94,24 +77,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = React.useCallback((token: string, refreshToken: string) => {
         localStorage.setItem('token', token);
         localStorage.setItem('refreshToken', refreshToken);
- 
         const userData = getUserFromToken(token);
         setUser(userData);
- 
-        router.push('/');
-    }, [router]);
- 
+        // We handle navigation in AppShell or the login page itself to avoid double push
+    }, []);
+
     const register = React.useCallback((token: string, refreshToken: string) => {
         localStorage.setItem('token', token);
         localStorage.setItem('refreshToken', refreshToken);
- 
         const userData = getUserFromToken(token);
         setUser(userData);
- 
-        router.push('/');
-    }, [router]);
-
-    const [companyId, setCompanyIdState] = useState<number | null>(null);
+    }, []);
 
     const setCompanyId = React.useCallback((id: number | null) => {
         setCompanyIdState(id);
@@ -128,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('companyId');
         setUser(null);
         setCompanyIdState(null);
-        router.push('/login');
+        router.replace('/login');
     }, [router]);
 
     const contextValue = React.useMemo(() => ({

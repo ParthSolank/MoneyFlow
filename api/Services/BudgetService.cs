@@ -8,11 +8,13 @@ public class BudgetService
 {
     private readonly MoneyFlowDbContext _context;
     private readonly UserContext _userContext;
+    private readonly AuditLogService _auditLog;
 
-    public BudgetService(MoneyFlowDbContext context, UserContext userContext)
+    public BudgetService(MoneyFlowDbContext context, UserContext userContext, AuditLogService auditLog)
     {
         _context = context;
         _userContext = userContext;
+        _auditLog = auditLog;
     }
 
     private IQueryable<Budget> GetBaseQuery()
@@ -50,6 +52,9 @@ public class BudgetService
 
         _context.Budgets.Add(budget);
         await _context.SaveChangesAsync();
+        
+        await _auditLog.LogAsync("Create", "Budget", $"Created budget for category {budget.CategoryId}, Amount: {budget.Amount}, Period: {budget.Month}/{budget.Year}. ID: {budget.Id}");
+        
         return await GetByIdAsync(budget.Id) ?? budget;
     }
 
@@ -58,6 +63,8 @@ public class BudgetService
         var existing = await GetBaseQuery().FirstOrDefaultAsync(b => b.Id == id);
         if (existing == null) return false;
 
+        string summary = $"Updated budget for category {existing.CategoryId}. Amount: {existing.Amount}->{updated.Amount}";
+
         existing.Amount = updated.Amount;
         existing.Month = updated.Month;
         existing.Year = updated.Year;
@@ -65,6 +72,7 @@ public class BudgetService
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Update", "Budget", summary);
         return true;
     }
 
@@ -77,6 +85,8 @@ public class BudgetService
         budget.DeletedAt = DateTime.UtcNow;
         _context.Budgets.Update(budget);
         await _context.SaveChangesAsync();
+        
+        await _auditLog.LogAsync("Delete", "Budget", $"Soft-deleted budget ID: {id}");
         return true;
     }
 
