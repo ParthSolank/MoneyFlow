@@ -145,6 +145,9 @@ export default function CategoriesPage() {
                             <Tag className="h-8 w-8" />
                         </div>
                         Category Master
+                        <Badge variant="secondary" className="ml-3 h-6 px-3 rounded-full bg-amber-50 text-amber-600 border-amber-100 font-bold animate-in fade-in zoom-in duration-500">
+                            {categories.length} Total
+                        </Badge>
                     </h1>
                     <p className="text-muted-foreground mt-2 text-lg">
                         Manage your expense and income categories for better financial clarity.
