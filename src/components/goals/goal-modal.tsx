@@ -21,7 +21,6 @@ interface GoalModalProps {
 }
 
 export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
-  console.log("GoalModal Render - isOpen:", isOpen);
   const isEdit = !!goal;
   const { createGoal, updateGoal } = useGoals()
   const { mutate: mutateInsights } = useSmartInsights()

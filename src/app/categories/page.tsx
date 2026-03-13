@@ -49,12 +49,14 @@ export default function CategoriesPage() {
         icon: string;
         color: string;
         keywords: string;
+        parentId: string;
     }>({
         name: "",
         type: "expense",
         icon: "Tag",
         color: "#6366f1",
-        keywords: ""
+        keywords: "",
+        parentId: "none"
     });
 
     useEffect(() => {
@@ -81,7 +83,8 @@ export default function CategoriesPage() {
                 type: category.type as any,
                 icon: category.icon,
                 color: category.color,
-                keywords: category.keywords || ""
+                keywords: category.keywords || "",
+                parentId: category.parentId?.toString() || "none"
             });
         } else {
             setEditingCategory(null);
@@ -90,7 +93,8 @@ export default function CategoriesPage() {
                 type: "expense",
                 icon: "Tag",
                 color: "#6366f1",
-                keywords: ""
+                keywords: "",
+                parentId: "none"
             });
         }
         setIsDialogOpen(true);
@@ -101,10 +105,16 @@ export default function CategoriesPage() {
         setIsSubmitting(true);
         try {
             if (editingCategory) {
-                await categoryApi.update(editingCategory.id, formData);
+                await categoryApi.update(editingCategory.id, {
+                    ...formData,
+                    parentId: formData.parentId === "none" ? undefined : parseInt(formData.parentId)
+                });
                 toast({ title: "Success", description: "Category updated successfully" });
             } else {
-                await categoryApi.create(formData);
+                await categoryApi.create({
+                    ...formData,
+                    parentId: formData.parentId === "none" ? undefined : parseInt(formData.parentId)
+                });
                 toast({ title: "Success", description: "Category created successfully" });
             }
             setIsDialogOpen(false);
@@ -117,13 +127,26 @@ export default function CategoriesPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this category?")) return;
+        if (!confirm("Are you sure you want to delete this category? All sub-categories will be unlinked.")) return;
         try {
             await categoryApi.delete(id);
             toast({ title: "Success", description: "Category deleted" });
             fetchCategories();
         } catch (error) {
             toast({ title: "Error", description: "Failed to delete category", variant: "destructive" });
+        }
+    };
+
+    const handleSeed = async () => {
+        try {
+            setIsSubmitting(true);
+            await categoryApi.seed();
+            toast({ title: "Success", description: "Default categories seeded!" });
+            fetchCategories();
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to seed categories" });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -155,16 +178,26 @@ export default function CategoriesPage() {
                 </motion.div>
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        {canCreate("CORE", "CATEGORIES") && (
-                            <Button
-                                onClick={() => handleOpenDialog()}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-none h-12 px-6 rounded-xl transition-all hover:scale-105 active:scale-95"
-                            >
-                                <Plus className="mr-2 h-5 w-5" /> Add Category
-                            </Button>
-                        )}
-                    </DialogTrigger>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            onClick={handleSeed}
+                            disabled={isSubmitting}
+                            variant="outline"
+                            className="border-amber-200 text-amber-600 hover:bg-amber-50 h-12 px-6 rounded-xl font-bold"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin h-5 w-5" /> : "Smart Setup"}
+                        </Button>
+                        <DialogTrigger asChild>
+                            {canCreate("CORE", "CATEGORIES") && (
+                                <Button
+                                    onClick={() => handleOpenDialog()}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-none h-12 px-6 rounded-xl transition-all hover:scale-105 active:scale-95"
+                                >
+                                    <Plus className="mr-2 h-5 w-5" /> Add Category
+                                </Button>
+                            )}
+                        </DialogTrigger>
+                    </div>
                     <DialogContent className="sm:max-w-[425px] rounded-2xl border-0 shadow-2xl backdrop-blur-xl bg-white/90 dark:bg-gray-900/90">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
@@ -186,21 +219,40 @@ export default function CategoriesPage() {
                                         className="h-12 rounded-xl border-gray-200 focus:ring-indigo-500"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-1">Type</label>
-                                    <Select
-                                        value={formData.type}
-                                        onValueChange={(v) => setFormData({ ...formData, type: v as any })}
-                                    >
-                                        <SelectTrigger className="h-12 rounded-xl border-gray-200">
-                                            <SelectValue placeholder="Select type" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border-gray-200">
-                                            <SelectItem value="expense">Expense</SelectItem>
-                                            <SelectItem value="income">Income</SelectItem>
-                                            <SelectItem value="both">Both</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-1">Type</label>
+                                        <Select
+                                            value={formData.type}
+                                            onValueChange={(v) => setFormData({ ...formData, type: v as any })}
+                                        >
+                                            <SelectTrigger className="h-12 rounded-xl border-gray-200">
+                                                <SelectValue placeholder="Select type" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl border-gray-200">
+                                                <SelectItem value="expense">Expense</SelectItem>
+                                                <SelectItem value="income">Income</SelectItem>
+                                                <SelectItem value="both">Both</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-1">Parent Category</label>
+                                        <Select
+                                            value={formData.parentId}
+                                            onValueChange={(v) => setFormData({ ...formData, parentId: v })}
+                                        >
+                                            <SelectTrigger className="h-12 rounded-xl border-gray-200">
+                                                <SelectValue placeholder="None" />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl border-gray-200">
+                                                <SelectItem value="none">None (Root)</SelectItem>
+                                                {categories.filter(c => c.id !== editingCategory?.id && !c.parentId).map(c => (
+                                                    <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
@@ -340,7 +392,7 @@ export default function CategoriesPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="space-y-1">
+                                        <div className="space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100">{category.name}</h3>
                                                 <Badge
@@ -355,8 +407,21 @@ export default function CategoriesPage() {
                                                     {category.type}
                                                 </Badge>
                                             </div>
-                                            <p className="text-sm text-muted-foreground">Updated {mounted ? new Date().toLocaleDateString() : '...'}</p>
                                             
+                                            {category.subCategories && category.subCategories.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-4">
+                                                    {category.subCategories.map(sub => (
+                                                        <Badge 
+                                                            key={sub.id} 
+                                                            variant="secondary" 
+                                                            className="bg-indigo-50/50 text-indigo-600 border-0 text-[10px] font-bold px-2 py-1 rounded-lg"
+                                                        >
+                                                            {sub.name}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            )}
+
                                             {category.keywords && (
                                                 <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-50 dark:border-gray-800">
                                                     {category.keywords.split(',').slice(0, 3).map((kw, i) => (
@@ -364,9 +429,6 @@ export default function CategoriesPage() {
                                                             {kw.trim()}
                                                         </Badge>
                                                     ))}
-                                                    {category.keywords.split(',').length > 3 && (
-                                                        <span className="text-[9px] font-black text-gray-400 ml-1">+{category.keywords.split(',').length - 3}</span>
-                                                    )}
                                                 </div>
                                             )}
                                         </div>

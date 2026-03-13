@@ -73,11 +73,11 @@ public class GoalsController : ControllerBase
         await _auditLogService.LogAsync("CREATE", "Goals", $"Added contribution of {request.Amount} to goal ID {id}");
         return Ok(contribution);
     }
-}
 
-public class ContributionRequest
-{
-    public decimal Amount { get; set; }
-    public int? LedgerId { get; set; }
-    public string? Notes { get; set; }
+    public class ContributionRequest
+    {
+        public decimal Amount { get; set; }
+        public int? LedgerId { get; set; }
+        public string? Notes { get; set; }
+    }
 }

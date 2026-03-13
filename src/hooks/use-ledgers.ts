@@ -11,11 +11,7 @@ const EMPTY_ARRAY: any[] = [];
 export function useLedgers() {
     const { data, error, isLoading, mutate } = useSWR(
         'api/ledgers',
-        () => ledgerApi.getAll(),
-        {
-            revalidateOnFocus: false,
-            dedupingInterval: 60000, // Cache for 1 minute
-        }
+        () => ledgerApi.getAll()
     );
 
     return {

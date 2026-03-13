@@ -32,6 +32,8 @@ public class CategoryService
     public async Task<List<Category>> GetAllAsync()
     {
         return await GetBaseQuery()
+            .Include(c => c.SubCategories)
+            .Where(c => c.ParentId == null) // Get top level categories
             .OrderBy(c => c.Name)
             .ToListAsync();
     }
@@ -89,5 +91,70 @@ public class CategoryService
         
         await _auditLog.LogAsync("Delete", "Category", $"Soft-deleted category '{category.Name}'. ID: {id}");
         return true;
+    }
+
+    public async Task SeedDefaultCategoriesAsync(int? companyId = null)
+    {
+        var targetCompanyId = companyId ?? _userContext.CompanyId;
+        if (targetCompanyId == null) return;
+
+        // Check if categories already exist for this company
+        if (await _context.Categories.AnyAsync(c => c.CompanyId == targetCompanyId)) return;
+
+        var categories = new List<(string Name, string Type, string Icon, string Color, string[] Subs)>
+        {
+            // INCOME
+            ("Salary Income", "income", "Briefcase", "#3b82f6", new[] { "Monthly Salary", "Overtime Payment", "Bonus / Incentive", "Allowance" }),
+            ("FD Income", "income", "Bank", "#10b981", new[] { "Interest" }),
+            ("Share Income", "income", "TrendingUp", "#059669", new[] { "Profit from Shares", "Dividend" }),
+            ("Mutual Fund Income", "income", "PieChart", "#047857", new[] { "MF Profit (Redeem)", "MF Dividend" }),
+
+            // EXPENSE
+            ("Food", "expense", "Utensils", "#ef4444", new[] { "Groceries", "Tiffin / Lunch", "Tea / Snacks" }),
+            ("Travel", "expense", "Car", "#f59e0b", new[] { "Petrol", "Bus / Auto / Cab", "Office Travel" }),
+            ("Home", "expense", "Home", "#8b5cf6", new[] { "Rent", "Electricity", "Gas", "Water", "Internet" }),
+            ("Bills", "expense", "Smartphone", "#ec4899", new[] { "Mobile Recharge", "Subscriptions" }),
+            ("Personal", "expense", "User", "#6366f1", new[] { "Clothes", "Grooming" }),
+            ("Health", "expense", "HeartPulse", "#f43f5e", new[] { "Medicines", "Doctor" }),
+            ("Investment Expenses", "expense", "Coins", "#64748b", new[] { "Share Brokerage", "MF Expense Ratio", "Exit Load" }),
+            ("Tax", "expense", "Receipt", "#dc2626", new[] { "FD Tax", "Share Tax", "MF Tax" }),
+            ("Other", "expense", "MoreHorizontal", "#94a3b8", new[] { "Family", "Gifts", "Emergency" })
+        };
+
+        foreach (var cat in categories)
+        {
+            var parent = new Category
+            {
+                Name = cat.Name,
+                Type = cat.Type,
+                Icon = cat.Icon,
+                Color = cat.Color,
+                CompanyId = targetCompanyId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Categories.Add(parent);
+            await _context.SaveChangesAsync();
+
+            foreach (var subName in cat.Subs)
+            {
+                var sub = new Category
+                {
+                    Name = subName,
+                    Type = cat.Type,
+                    Icon = cat.Icon,
+                    Color = cat.Color,
+                    ParentId = parent.Id,
+                    CompanyId = targetCompanyId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.Categories.Add(sub);
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("SEED", "Category", $"Seeded default categories for company ID {targetCompanyId}");
     }
 }

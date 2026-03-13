@@ -27,6 +27,13 @@ public class Category
     [MaxLength(1000)]
     public string? Keywords { get; set; } = string.Empty;
 
+    public int? ParentId { get; set; }
+
+    [ForeignKey("ParentId")]
+    public Category? Parent { get; set; }
+
+    public ICollection<Category> SubCategories { get; set; } = new List<Category>();
+
     public int? CompanyId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

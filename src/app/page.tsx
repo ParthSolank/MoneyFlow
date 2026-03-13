@@ -98,7 +98,7 @@ export default function Dashboard() {
 
       <SmartInsights />
 
-      {!loadingLedgers && topLedgers.length === 0 && (
+      {!loadingLedgers && ledgers.length === 0 && (
           <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden relative group">
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute -right-12 -top-12 h-64 w-64 bg-white/10 rounded-full blur-3xl opacity-50" />

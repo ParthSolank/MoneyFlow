@@ -64,4 +64,11 @@ public class CategoriesController : ControllerBase
         await _auditLogService.LogAsync("DELETE", "Categories", $"Deleted category ID {id}");
         return NoContent();
     }
+
+    [HttpPost("seed")]
+    public async Task<IActionResult> Seed()
+    {
+        await _categoryService.SeedDefaultCategoriesAsync();
+        return Ok(new { message = "Default categories seeded successfully." });
+    }
 }

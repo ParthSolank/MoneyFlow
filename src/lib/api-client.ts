@@ -54,6 +54,8 @@ export interface Category {
     icon: string;
     color: string;
     keywords?: string;
+    parentId?: number;
+    subCategories?: Category[];
     companyId?: number;
 }
 
@@ -386,6 +388,9 @@ export const categoryApi = {
     },
     delete: async (id: number): Promise<void> => {
         return api.delete(`/categories/${id}`);
+    },
+    seed: async (): Promise<void> => {
+        return api.post('/categories/seed', {});
     }
 };
 
