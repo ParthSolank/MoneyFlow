@@ -1,9 +1,9 @@
 "use client";
 
 import useSWR from 'swr';
-import { transactionApi } from '@/lib/api-client';
+import { transactionApi, Transaction } from '@/lib/api-client';
  
-const EMPTY_ARRAY: any[] = [];
+const EMPTY_ARRAY: Transaction[] = [];
 
 /**
  * Custom hook for fetching and caching transactions using SWR
@@ -30,7 +30,7 @@ export function useTransactions(startDate?: string, endDate?: string) {
     );
 
     // Extract transactions array whether data is an Array or a PagedResult object
-    const transactionsList = data ? (Array.isArray(data) ? data : (data as any).items || []) : EMPTY_ARRAY;
+    const transactionsList: Transaction[] = data ? (Array.isArray(data) ? data : (data as any).items || []) : EMPTY_ARRAY;
 
     return {
         transactions: transactionsList,

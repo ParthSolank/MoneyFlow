@@ -20,6 +20,7 @@ import { useCategoryBreakdown, useWealthDistribution } from "@/hooks/use-stats";
 import { useState, useMemo } from "react";
 import { SpendingHeatmap } from "./spending-heatmap";
 import { useTransactions } from "@/hooks/use-transactions";
+import { Transaction } from "@/lib/api-client";
 
 interface DashboardChartsProps {
     startDate?: string;
@@ -58,7 +59,7 @@ export function DashboardCharts({ startDate, endDate }: DashboardChartsProps) {
         const dataMap: Record<string, { income: number, expense: number }> = {};
         months.forEach(m => dataMap[m] = { income: 0, expense: 0 });
 
-        transactions.forEach(t => {
+        transactions.forEach((t: Transaction) => {
             const date = new Date(t.date);
             const monthName = date.toLocaleString('default', { month: 'short' });
             if (dataMap[monthName]) {
