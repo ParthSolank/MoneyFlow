@@ -2,16 +2,19 @@
 
 import useSWR from 'swr';
 import { transactionApi, Transaction } from '@/lib/api-client';
+import { api } from '@/lib/api';
  
 const EMPTY_ARRAY: Transaction[] = [];
 
 /**
  * Custom hook for fetching and caching transactions using SWR
  */
-export function useTransactions(startDate?: string, endDate?: string) {
+export function useTransactions(startDate?: string, endDate?: string, page: number = 1, pageSize: number = 50) {
     const queryParams = new URLSearchParams();
     if (startDate) queryParams.append('start', startDate);
     if (endDate) queryParams.append('end', endDate);
+    queryParams.append('page', page.toString());
+    queryParams.append('pageSize', pageSize.toString());
 
     const cacheKey = `api/transactions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
@@ -19,9 +22,12 @@ export function useTransactions(startDate?: string, endDate?: string) {
         cacheKey,
         () => {
             if (startDate && endDate) {
+                // Currently getByDateRange doesn't use pagination in the backend, but we pass it anyway for consistency
                 return transactionApi.getByDateRange(startDate, endDate);
             }
-            return transactionApi.getAll();
+            // For standard getAll, we should pass pagination if we update the API client, 
+            // but for now the SWR key change will force re-fetch and the API uses query params
+            return api.get(`/transactions?page=${page}&pageSize=${pageSize}`);
         },
         {
             revalidateOnFocus: false,
@@ -29,11 +35,14 @@ export function useTransactions(startDate?: string, endDate?: string) {
         }
     );
 
-    // Extract transactions array whether data is an Array or a PagedResult object
-    const transactionsList: Transaction[] = data ? (Array.isArray(data) ? data : (data as any).items || []) : EMPTY_ARRAY;
+    const transactionsList = data ? (Array.isArray(data) ? data : (data as any).items || []) : EMPTY_ARRAY;
+    const totalCount = data && !Array.isArray(data) ? (data as any).totalCount : transactionsList.length;
+    const totalPages = data && !Array.isArray(data) ? (data as any).totalPages : 1;
 
     return {
         transactions: transactionsList,
+        totalCount,
+        totalPages,
         isLoading,
         isError: error,
         mutate

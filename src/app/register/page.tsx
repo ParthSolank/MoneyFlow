@@ -56,10 +56,9 @@ export default function RegisterPage() {
                 username: values.username,
                 email: values.email,
                 password: values.password,
-                role: "User", // Default role
             });
 
-            register(data.token, data.refreshToken);
+            register(data.token);
 
             toast({
                 title: "Welcome aboard! 🎉",

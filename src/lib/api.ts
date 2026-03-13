@@ -22,30 +22,27 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
     const response = await fetch(`${API_BASE_URL}${url}`, {
         ...options,
         headers,
+        credentials: 'include', // Support HttpOnly cookies
     });
 
     if (response.status === 401 && !isServer) {
         // Attempt refresh
         try {
-            const refreshToken = localStorage.getItem('refreshToken');
             const oldToken = localStorage.getItem('token');
-
-            if (!refreshToken || !oldToken) {
-                throw new Error('No refresh token available');
-            }
 
             const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(oldToken && { Authorization: `Bearer ${oldToken}` }),
                 },
-                body: JSON.stringify({ token: oldToken, refreshToken }),
+                credentials: 'include', // MUST include this to send the refresh cookie
+                body: JSON.stringify({ token: oldToken }),
             });
 
             if (refreshResponse.ok) {
                 const data = await refreshResponse.json();
                 localStorage.setItem('token', data.token);
-                localStorage.setItem('refreshToken', data.refreshToken);
 
                 // Retry original request with new token
                 const newHeaders = {
@@ -56,11 +53,11 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
                 return await fetch(`${API_BASE_URL}${url}`, {
                     ...options,
                     headers: newHeaders,
+                    credentials: 'include',
                 });
             } else {
                 // Refresh failed, logout
                 localStorage.removeItem('token');
-                localStorage.removeItem('refreshToken');
                 if (!isRedirecting && typeof window !== 'undefined' && window.location.pathname !== '/login') {
                     isRedirecting = true;
                     window.location.href = '/login';
@@ -72,7 +69,6 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
             if (!isRedirecting && typeof window !== 'undefined' && window.location.pathname !== '/login') {
                 isRedirecting = true;
                 localStorage.removeItem('token');
-                localStorage.removeItem('refreshToken');
                 window.location.href = '/login';
             }
             throw refreshError;

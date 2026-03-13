@@ -36,12 +36,11 @@ public class AuthService : IAuthService
             Username = request.Username,
             Email = request.Email,
             PasswordHash = passwordHash,
-            Role = request.Role,
-            Rights = request.Rights ?? new List<string> 
+            Role = "User", // HARDCODED DEFAULT
+            Rights = new List<string> 
             { 
-                "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE",
-                "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE",
-                "VIEW_REPORTS"
+                "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE",
+                "CORE_LEDGERS_VIEW", "VIEW_REPORTS"
             },
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -87,7 +86,7 @@ public class AuthService : IAuthService
     private async Task<AuthResponse> GenerateAuthResponseAsync(User user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var secretKey = _configuration["JwtSettings:Secret"] ?? "SuperSecretKeyForDevelopmentOnlyPleaseChangeCurrently";
+        var secretKey = _configuration["JwtSettings:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
         var key = Encoding.ASCII.GetBytes(secretKey);
         
         var claims = new List<Claim>
@@ -154,15 +153,7 @@ public class AuthService : IAuthService
 
     private ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
     {
-        var secretKey = _configuration["JwtSettings:Secret"] ?? "SuperSecretKeyForDevelopmentOnlyPleaseChangeCurrently";
-        var tokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateAudience = true,
-            ValidAudience = _configuration["JwtSettings:Audience"] ?? "MoneyFlowProUsers",
-            ValidateIssuer = true,
-            ValidIssuer = _configuration["JwtSettings:Issuer"] ?? "MoneyFlowPro",
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured"))),
             ValidateLifetime = false // Here we are checking expired token, so allow expired
         };
 

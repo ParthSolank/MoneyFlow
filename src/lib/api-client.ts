@@ -209,6 +209,7 @@ export const transactionApi = {
                 ...(companyId ? { 'X-Company-Id': companyId } : {})
             },
             body: formData,
+            credentials: 'include', // Support HttpOnly cookies
         });
 
         if (!response.ok) {
@@ -229,6 +230,7 @@ export const transactionApi = {
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                 ...(companyId ? { 'X-Company-Id': companyId } : {})
             },
+            credentials: 'include', // Support HttpOnly cookies
         });
 
         if (!response.ok) throw new Error('Failed to generate PDF');

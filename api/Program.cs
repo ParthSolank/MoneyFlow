@@ -19,6 +19,7 @@ builder.Services.AddDbContext<MoneyFlowDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TransactionService>();
 builder.Services.AddScoped<LedgerService>();
@@ -30,6 +31,10 @@ builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<BudgetService>();
 builder.Services.AddScoped<ReportingService>();
 builder.Services.AddScoped<UserContext>();
+
+// File Parsers
+builder.Services.AddScoped<IFileParser, CsvFileParser>();
+builder.Services.AddScoped<IFileParser, ExcelFileParser>();
 
 // Add Background Service for recurring transactions
 builder.Services.AddHostedService<RecurringTransactionWorker>();
@@ -46,12 +51,7 @@ var secretKey = builder.Configuration["JwtSettings:Secret"] ?? builder.Configura
 
 if (string.IsNullOrEmpty(secretKey) || secretKey.Length < 32)
 {
-    if (builder.Environment.IsProduction())
-    {
-        throw new InvalidOperationException("A secure JWT Secret (min 32 chars) must be configured in production!");
-    }
-    // Fallback for dev ONLY if absolutely necessary, but warn
-    secretKey ??= "SuperSecretKeyForDevelopmentOnlyPleaseChangeCurrently";
+    throw new InvalidOperationException("FATAL: JWT Secret is not configured or too short (min 32 characters). Set 'JwtSettings:Secret' or 'JWT_SECRET' environment variable.");
 }
 
 var key = Encoding.ASCII.GetBytes(secretKey);

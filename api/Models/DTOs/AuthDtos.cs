@@ -15,9 +15,6 @@ public class RegisterRequest
     [Required]
     [MinLength(6)]
     public required string Password { get; set; }
-
-    public string Role { get; set; } = "User";
-    public List<string> Rights { get; set; } = new List<string>();
 }
 
 public class LoginRequest
@@ -48,6 +45,6 @@ public class UserDto
 
 public class RefreshTokenRequest
 {
-    public required string Token { get; set; }
-    public required string RefreshToken { get; set; }
+    public string? Token { get; set; }
+    public string? RefreshToken { get; set; }
 }

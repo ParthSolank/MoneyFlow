@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MoneyFlowApi.Data;
 using MoneyFlowApi.Models;
 
@@ -11,18 +12,25 @@ namespace MoneyFlowApi.Controllers;
 [Route("api/[controller]")]
 public class StatsController : ControllerBase
 {
-    private readonly MoneyFlowDbContext _context;
-    private readonly UserContext _userContext;
+    private readonly IMemoryCache _cache;
 
-    public StatsController(MoneyFlowDbContext context, UserContext userContext)
+    public StatsController(MoneyFlowDbContext context, UserContext userContext, IMemoryCache cache)
     {
         _context = context;
         _userContext = userContext;
+        _cache = cache;
     }
 
     [HttpGet("summary")]
     public async Task<ActionResult> GetSummary([FromQuery] string? startDate, [FromQuery] string? endDate)
     {
+        var cacheKey = $"summary_{_userContext.UserId}_{_userContext.CompanyId}_{startDate}_{endDate}";
+        
+        if (_cache.TryGetValue(cacheKey, out object? cachedResult))
+        {
+            return Ok(cachedResult);
+        }
+
         var currentMonth = DateTime.UtcNow.ToString("yyyy-MM");
         
         // Use provided dates if available, otherwise fallback to current month
@@ -37,18 +45,29 @@ public class StatsController : ControllerBase
         var totalIncome = transactions.Where(t => t.Type == "income").Sum(t => t.Amount);
         var totalExpenses = transactions.Where(t => t.Type == "expense").Sum(t => t.Amount);
 
-        return Ok(new
+        var result = new
         {
-            TotalBalance = totalBalance, // for UI 'Total Balance'
-            Balance = totalBalance,      // fallback
-            TotalIncome = totalIncome,   // for UI 'Monthly Income'
-            TotalExpenses = totalExpenses // for UI 'Monthly Expenses'
-        });
+            TotalBalance = totalBalance,
+            Balance = totalBalance,
+            TotalIncome = totalIncome,
+            TotalExpenses = totalExpenses
+        };
+
+        _cache.Set(cacheKey, result, TimeSpan.FromMinutes(1));
+
+        return Ok(result);
     }
 
     [HttpGet("monthly-trends")]
     public async Task<ActionResult> GetMonthlyTrends()
     {
+        var cacheKey = $"trends_{_userContext.UserId}_{_userContext.CompanyId}";
+
+        if (_cache.TryGetValue(cacheKey, out object? cachedResult))
+        {
+            return Ok(cachedResult);
+        }
+
         var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
         string startDate = new DateTime(sixMonthsAgo.Year, sixMonthsAgo.Month, 1).ToString("yyyy-MM-dd");
 
@@ -67,6 +86,8 @@ public class StatsController : ControllerBase
             })
             .OrderBy(x => x.Month)
             .ToList();
+
+        _cache.Set(cacheKey, trends, TimeSpan.FromMinutes(1));
 
         return Ok(trends);
     }

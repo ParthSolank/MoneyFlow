@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
+import { api } from "@/lib/api";
 
 interface User {
     id: number;
@@ -15,9 +16,9 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (token: string, refreshToken: string) => void;
-    register: (token: string, refreshToken: string) => void;
-    logout: () => void;
+    login: (token: string) => void;
+    register: (token: string) => void;
+    logout: () => Promise<void>;
     companyId: number | null;
     setCompanyId: (id: number | null) => void;
 }
@@ -68,23 +69,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setUser(userData);
             } else {
                 localStorage.removeItem('token');
-                localStorage.removeItem('refreshToken');
             }
         }
         setLoading(false);
     }, []);
 
-    const login = React.useCallback((token: string, refreshToken: string) => {
+    const login = React.useCallback((token: string) => {
         localStorage.setItem('token', token);
-        localStorage.setItem('refreshToken', refreshToken);
         const userData = getUserFromToken(token);
         setUser(userData);
         // We handle navigation in AppShell or the login page itself to avoid double push
     }, []);
 
-    const register = React.useCallback((token: string, refreshToken: string) => {
+    const register = React.useCallback((token: string) => {
         localStorage.setItem('token', token);
-        localStorage.setItem('refreshToken', refreshToken);
         const userData = getUserFromToken(token);
         setUser(userData);
     }, []);
@@ -98,9 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
-    const logout = React.useCallback(() => {
+    const logout = React.useCallback(async () => {
+        try {
+            await api.post('/auth/logout', {});
+        } catch (error) {
+            console.error('Failed to logout from server', error);
+        }
         localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
         localStorage.removeItem('companyId');
         setUser(null);
         setCompanyIdState(null);
