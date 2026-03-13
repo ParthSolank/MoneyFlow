@@ -101,24 +101,24 @@ public class CategoryService
         // Check if categories already exist for this company
         if (await _context.Categories.AnyAsync(c => c.CompanyId == targetCompanyId)) return;
 
-        var categories = new List<(string Name, string Type, string Icon, string Color, string[] Subs)>
+        var categories = new List<(string Name, string Type, string Icon, string Color, string Keywords, string[] Subs)>
         {
             // INCOME
-            ("Salary Income", "income", "Briefcase", "#3b82f6", new[] { "Monthly Salary", "Overtime Payment", "Bonus / Incentive", "Allowance" }),
-            ("FD Income", "income", "Bank", "#10b981", new[] { "Interest" }),
-            ("Share Income", "income", "TrendingUp", "#059669", new[] { "Profit from Shares", "Dividend" }),
-            ("Mutual Fund Income", "income", "PieChart", "#047857", new[] { "MF Profit (Redeem)", "MF Dividend" }),
+            ("Salary Income", "income", "Briefcase", "#3b82f6", "salary,neft,imps,rtgs,bonus", new[] { "Monthly Salary", "Overtime Payment", "Bonus / Incentive", "Allowance" }),
+            ("FD Income", "income", "Bank", "#10b981", "fd,interest,fixed deposit", new[] { "Interest" }),
+            ("Share Income", "income", "TrendingUp", "#059669", "share,dividend,profit,zerodha,upstox", new[] { "Profit from Shares", "Dividend" }),
+            ("Mutual Fund Income", "income", "PieChart", "#047857", "mf,mutual,fund,redemption,groww", new[] { "MF Profit (Redeem)", "MF Dividend" }),
 
             // EXPENSE
-            ("Food", "expense", "Utensils", "#ef4444", new[] { "Groceries", "Tiffin / Lunch", "Tea / Snacks" }),
-            ("Travel", "expense", "Car", "#f59e0b", new[] { "Petrol", "Bus / Auto / Cab", "Office Travel" }),
-            ("Home", "expense", "Home", "#8b5cf6", new[] { "Rent", "Electricity", "Gas", "Water", "Internet" }),
-            ("Bills", "expense", "Smartphone", "#ec4899", new[] { "Mobile Recharge", "Subscriptions" }),
-            ("Personal", "expense", "User", "#6366f1", new[] { "Clothes", "Grooming" }),
-            ("Health", "expense", "HeartPulse", "#f43f5e", new[] { "Medicines", "Doctor" }),
-            ("Investment Expenses", "expense", "Coins", "#64748b", new[] { "Share Brokerage", "MF Expense Ratio", "Exit Load" }),
-            ("Tax", "expense", "Receipt", "#dc2626", new[] { "FD Tax", "Share Tax", "MF Tax" }),
-            ("Other", "expense", "MoreHorizontal", "#94a3b8", new[] { "Family", "Gifts", "Emergency" })
+            ("Food", "expense", "Utensils", "#ef4444", "zomato,swiggy,restaurant,food,hotel,grocery,mart,jio mart,blinkit,zepto,bigbasket", new[] { "Groceries", "Tiffin / Lunch", "Tea / Snacks" }),
+            ("Travel", "expense", "Car", "#f59e0b", "uber,ola,petrol,diesel,fuel,cng,shell,railway,irctc,bus,travel,indane,hpcl", new[] { "Petrol", "Bus / Auto / Cab", "Office Travel" }),
+            ("Home", "expense", "Home", "#8b5cf6", "rent,electricity,bescom,gas,water,internet,broadband,wifi,airtel,jio fiber", new[] { "Rent", "Electricity", "Gas", "Water", "Internet" }),
+            ("Bills", "expense", "Smartphone", "#ec4899", "mobile,recharge,bill,subscription,netflix,prime,spotify,hotstar", new[] { "Mobile Recharge", "Subscriptions" }),
+            ("Personal", "expense", "User", "#6366f1", "clothes,grooming,salon,barber,shopping,myntra,amazon,flipkart", new[] { "Clothes", "Grooming" }),
+            ("Health", "expense", "HeartPulse", "#f43f5e", "medicine,doctor,hospital,clinic,pharmacy,apollo,pharmeasy,1mg", new[] { "Medicines", "Doctor" }),
+            ("Investment Expenses", "expense", "Coins", "#64748b", "brokerage,expense ratio,exit load", new[] { "Share Brokerage", "MF Expense Ratio", "Exit Load" }),
+            ("Tax", "expense", "Receipt", "#dc2626", "tax,tds,gst,income tax,stcg,ltcg", new[] { "FD Tax", "Share Tax", "MF Tax" }),
+            ("Other", "expense", "MoreHorizontal", "#94a3b8", "emergency,gift,family", new[] { "Family", "Gifts", "Emergency" })
         };
 
         foreach (var cat in categories)
@@ -129,6 +129,7 @@ public class CategoryService
                 Type = cat.Type,
                 Icon = cat.Icon,
                 Color = cat.Color,
+                Keywords = cat.Keywords,
                 CompanyId = targetCompanyId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -145,6 +146,7 @@ public class CategoryService
                     Type = cat.Type,
                     Icon = cat.Icon,
                     Color = cat.Color,
+                    Keywords = subName.ToLower(),
                     ParentId = parent.Id,
                     CompanyId = targetCompanyId,
                     CreatedAt = DateTime.UtcNow,

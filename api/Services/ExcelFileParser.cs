@@ -29,7 +29,7 @@ public class ExcelFileParser : IFileParser
             {
                 var cell = row[j]?.ToString()?.ToLower()?.Trim() ?? "";
                 if (cell == "date") dateCol = j;
-                else if (cell == "description" || cell == "narration") descCol = j;
+                else if (cell == "description" || cell == "narration" || cell == "remark") descCol = j;
                 else if (cell == "amount") amountCol = j;
                 else if (cell == "withdrawal amt." || cell == "withdrawal" || cell == "debit" || cell == "dr amount" || cell == "dr.") withdrawalCol = j;
                 else if (cell == "deposit amt." || cell == "deposit" || cell == "credit" || cell == "cr amount" || cell == "cr.") depositCol = j;
