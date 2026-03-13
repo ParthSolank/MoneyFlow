@@ -110,7 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             />
 
             <div className="flex flex-col flex-1 min-w-0 h-full relative">
-                <header className="flex h-16 shrink-0 items-center justify-between px-4 lg:px-8 border-b border-gray-100 bg-white/80 backdrop-blur-md z-30">
+                <header className="flex h-16 shrink-0 items-center justify-between px-4 lg:px-10 border-b border-gray-100 bg-white/80 backdrop-blur-md z-30">
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={() => setIsMobileMenuOpen(true)}
@@ -118,19 +118,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg>
                         </button>
-                        <h2 className="text-xs lg:text-sm font-bold text-gray-400 uppercase tracking-[0.1em] lg:tracking-[0.2em] truncate">MoneyFlow Pro</h2>
+                        <h2 className="text-[10px] lg:text-xs font-black text-gray-400 uppercase tracking-[0.25em] lg:tracking-[0.4em] truncate">MoneyFlow Pro</h2>
                     </div>
-                    <div className="flex items-center gap-2 lg:gap-4">
+                    <div className="flex items-center gap-2 lg:gap-6">
                         <UserNav />
                     </div>
                 </header>
-                <main className="flex-1 overflow-y-auto p-4 lg:p-10 bg-gray-50/30">
+                <main className="flex-1 overflow-y-auto p-4 lg:p-12 bg-gray-50/30">
                     <motion.div
                         key={pathname}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
-                        className="max-w-[1600px] mx-auto w-full min-h-full"
+                        className="max-w-[1800px] mx-auto w-full min-h-full"
                     >
                         {children}
                     </motion.div>

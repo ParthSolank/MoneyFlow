@@ -59,8 +59,8 @@ export function AppSidebar({
       <aside 
         className={cn(
           "h-screen bg-white border-r border-gray-100 flex flex-col py-6 shrink-0 z-50 transition-all duration-300 ease-in-out fixed lg:sticky top-0 left-0",
-          isExpanded ? "w-[260px]" : "w-[72px]",
-          !isMobileOpen ? "-translate-x-full lg:translate-x-0" : "translate-x-0 w-[260px] shadow-2xl shadow-indigo-200"
+          isExpanded ? "w-[280px]" : "w-[80px]",
+          !isMobileOpen ? "-translate-x-full lg:translate-x-0" : "translate-x-0 w-[280px] shadow-2xl shadow-indigo-200"
         )}
       >
         {/* Branding/Logo & Toggle */}
@@ -110,7 +110,7 @@ export function AppSidebar({
             if (!canView(item.section, item.page)) return null
             const isActive = pathname === item.url
             return (
-              <SidebarItem key={item.url} item={item} isActive={isActive} isExpanded={isExpanded} isDestructive />
+              <SidebarItem key={item.url} item={item} isActive={isActive} isExpanded={isExpanded || isMobileOpen} isDestructive />
             )
           })}
         </nav>
@@ -149,10 +149,10 @@ export function AppSidebar({
           </button>
 
           <div className={cn(
-            "mt-2 mb-2 px-2 py-3 rounded-xl border border-dashed border-gray-100 flex items-center gap-2 overflow-hidden bg-gray-50/50",
-            !(isExpanded || isMobileOpen) && "justify-center"
+            "mt-2 mb-2 px-2 py-3 rounded-xl border border-dashed border-gray-200 flex items-center gap-3 overflow-hidden bg-gray-50/80 shadow-inner",
+            !(isExpanded || isMobileOpen) && "justify-center px-0"
           )}>
-            <div className="w-6 h-6 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-black text-indigo-600 border border-indigo-200 uppercase">
+            <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-black text-white shadow-sm ring-2 ring-white uppercase">
               P
             </div>
             {(isExpanded || isMobileOpen) && (
@@ -177,14 +177,14 @@ function SidebarItem({ item, isActive, isExpanded, isDestructive = false }: { it
     <Link
       href={item.url}
       className={cn(
-        "relative flex items-center rounded-xl transition-all duration-300 group h-12",
+        "relative flex items-center rounded-xl transition-all duration-300 group h-12 shadow-sm hover:shadow-md",
         isActive 
           ? "bg-purple-600 text-white shadow-lg shadow-purple-200" 
           : "text-gray-400 hover:bg-gray-100 hover:text-gray-900",
-        isExpanded ? "px-4 gap-4 w-full" : "justify-center w-12 mx-auto"
+        isExpanded ? "px-4 gap-4 w-full" : "justify-center w-14 mx-auto"
       )}
     >
-      <item.icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300", !isActive && "group-hover:scale-110")} />
+      <item.icon className={cn("w-6 h-6 shrink-0 transition-transform duration-300", !isActive && "group-hover:scale-110")} />
       
       {isExpanded && (
         <motion.span 
