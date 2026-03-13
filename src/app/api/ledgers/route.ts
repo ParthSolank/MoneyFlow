@@ -1,5 +1,5 @@
 
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 const DOTNET_API_URL = process.env.DOTNET_API_URL || 'http://127.0.0.1:5039';
 

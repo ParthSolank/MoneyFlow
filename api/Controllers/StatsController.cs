@@ -12,6 +12,8 @@ namespace MoneyFlowApi.Controllers;
 [Route("api/[controller]")]
 public class StatsController : ControllerBase
 {
+    private readonly MoneyFlowDbContext _context;
+    private readonly UserContext _userContext;
     private readonly IMemoryCache _cache;
 
     public StatsController(MoneyFlowDbContext context, UserContext userContext, IMemoryCache cache)

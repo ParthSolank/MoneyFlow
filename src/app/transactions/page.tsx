@@ -85,7 +85,7 @@ export default function TransactionsPage() {
   }, [])
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
+    return transactions.filter((t: Transaction) => {
       if (!t || !t.description) return false;
 
       const desc = t.description.toLowerCase() || "";
@@ -103,10 +103,10 @@ export default function TransactionsPage() {
   }, [transactions, searchTerm, filterType, filterPayment, filterCategory, filterLedger]);
 
   const { totalDebit, totalCredit, startingBalance, finalBalance } = useMemo(() => {
-    const debit = filteredTransactions.reduce((acc, tx) => tx.type === 'expense' ? acc + tx.amount : acc, 0);
-    const credit = filteredTransactions.reduce((acc, tx) => tx.type === 'income' ? acc + tx.amount : acc, 0);
+    const debit = filteredTransactions.reduce((acc: number, tx: Transaction) => tx.type === 'expense' ? acc + tx.amount : acc, 0);
+    const credit = filteredTransactions.reduce((acc: number, tx: Transaction) => tx.type === 'income' ? acc + tx.amount : acc, 0);
 
-    const involvedLedgerIds = new Set(filteredTransactions.map(t => t.ledgerId?.toString()).filter(Boolean));
+    const involvedLedgerIds = new Set(filteredTransactions.map((t: Transaction) => t.ledgerId?.toString()).filter(Boolean));
     const startingBal = ledgers
       .filter(l => l.id && involvedLedgerIds.has(l.id.toString()))
       .reduce((acc, l) => acc + (l.balance || 0), 0);
@@ -119,7 +119,7 @@ export default function TransactionsPage() {
   // Calculate the running balance for each row (assuming descending order by date)
   const transactionsWithBalance = useMemo(() => {
     let currentBal = finalBalance;
-    return filteredTransactions.map(tx => {
+    return filteredTransactions.map((tx: Transaction) => {
       const balanceForThisRow = currentBal;
       // Un-apply this row to get the balance for the next (older) row
       if (tx.type === 'income') currentBal -= tx.amount;
@@ -138,7 +138,7 @@ export default function TransactionsPage() {
   }
 
   // Helper to get unique categories for filter
-  const uniqueCategories = Array.from(new Set(transactions.map(t => t.category)))
+  const uniqueCategories = Array.from(new Set(transactions.map((t: Transaction) => t.category))) as string[];
 
 
   const handleSaveTransaction = async (e: React.FormEvent) => {
@@ -576,7 +576,7 @@ export default function TransactionsPage() {
                     {dbCategories.map(cat => (
                       <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                     ))}
-                    {dbCategories.length === 0 && uniqueCategories.map(cat => (
+                    {dbCategories.length === 0 && (uniqueCategories as string[]).map((cat: string) => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                     ))}
                   </SelectContent>
@@ -618,7 +618,7 @@ export default function TransactionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="popLayout">
                 {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={9} className="h-64 text-center">
@@ -653,7 +653,7 @@ export default function TransactionsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  transactionsWithBalance.map((tx, index) => (
+                  transactionsWithBalance.map((tx: any, index: number) => (
                     <motion.tr
                       key={tx.id || index}
                       initial={{ opacity: 0, x: -10 }}

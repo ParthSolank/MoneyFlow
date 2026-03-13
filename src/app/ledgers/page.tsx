@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MOCK_LEDGERS } from "@/lib/mock-data"
 import { Wallet, PiggyBank, TrendingUp, Plus, MoreVertical, ArrowRight, CreditCard, Banknote, Pencil, Trash2, Loader2, Info } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"

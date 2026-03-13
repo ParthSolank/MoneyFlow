@@ -4,13 +4,12 @@ import { SummaryCards } from "@/components/dashboard/summary-cards"
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { MOCK_LEDGERS } from "@/lib/mock-data"
 import { Badge } from "@/components/ui/badge"
 import { ReceiptText, TrendingUp, NotebookTabs, ArrowUpRight, ArrowDownRight, Wallet, Banknote, CreditCard, PiggyBank, Loader2, ShieldCheck, Info, Activity, Users as UsersIcon, Database, PieChart } from "lucide-react"
 import { useTransactions } from "@/hooks/use-transactions";
 import { useLedgers } from "@/hooks/use-ledgers";
 import { useAuth } from "@/context/auth-context";
-import { userApi, budgetApi, BudgetStatus } from "@/lib/api-client";
+import { userApi, budgetApi, BudgetStatus, Transaction, Ledger } from "@/lib/api-client";
 import { usePermissions } from "@/hooks/use-permissions";
 import { FYSelector } from "@/components/fy-selector";
 import { getCurrentFinancialYear } from "@/lib/financial-year-utils";
@@ -61,8 +60,16 @@ export default function Dashboard() {
   const recentTransactions = useMemo(() => transactions.slice(0, 5), [transactions]);
   const topLedgers = useMemo(() => ledgers.slice(0, 4), [ledgers]);
 
-  if (!user || !canView("CORE", "DASHBOARD")) {
-    return null;
+  if (!canView("CORE", "DASHBOARD")) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
+        <div className="p-4 bg-rose-50 rounded-full">
+            <ShieldCheck className="h-12 w-12 text-rose-500" />
+        </div>
+        <h2 className="text-2xl font-bold">Access Restricted</h2>
+        <p className="text-muted-foreground">You do not have permission to view the Dashboard.</p>
+      </div>
+    );
   }
 
   return (
@@ -163,7 +170,7 @@ export default function Dashboard() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      recentTransactions.map((tx) => (
+                      recentTransactions.map((tx: Transaction) => (
                         <TableRow
                           key={tx.id}
                           className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
@@ -218,7 +225,7 @@ export default function Dashboard() {
                 ) : topLedgers.length === 0 ? (
                   <p className="text-center py-10 text-muted-foreground text-sm">No accounts added yet.</p>
                 ) : (
-                  topLedgers.map((ledger) => {
+                  topLedgers.map((ledger: Ledger) => {
                     const IconComp = iconMap[ledger.icon] || Wallet;
                     const displayBalance = ledger.balance || 0;
                     return (

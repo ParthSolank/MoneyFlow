@@ -1,6 +1,6 @@
 # 💰 MoneyFlow Pro - Modern Personal Finance Management
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16--LTS-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![.NET Core](https://img.shields.io/badge/.NET_Core-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
@@ -35,14 +35,15 @@
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework**: Next.js 14+ (App Router)
+- **Framework**: Next.js 16 (Active LTS)
+- **Bundler**: Turbopack (Stable)
 - **Styling**: Tailwind CSS & Shadcn UI
 - **State/Fetching**: SWR (Stale-While-Revalidate)
 - **Charts**: Recharts & Lucide Icons
 - **Auth**: JWT-based Authentication with interceptors
 
 ### Backend
-- **Framework**: ASP.NET Core Web API (.NET 9)
+- **Framework**: ASP.NET Core Web API (.NET 8)
 - **ORM**: Entity Framework Core
 - **Database**: SQL Server / LocalDB
 - **Processors**: ExcelDataReader & CsvHelper for mass data handling

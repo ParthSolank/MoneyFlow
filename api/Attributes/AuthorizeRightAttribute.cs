@@ -32,7 +32,7 @@ public class AuthorizeRightAttribute : Attribute, IAuthorizationFilter
         // Let's implement: User must have at least one of the specified rights.
         
         // Admin role bypasses all individual rights checks
-        if (user.IsInRole("Admin"))
+        if (user.IsInRole("Admin") || user.HasClaim(System.Security.Claims.ClaimTypes.Role, "Admin") || user.HasClaim("role", "Admin"))
         {
             return;
         }

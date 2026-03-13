@@ -182,16 +182,18 @@ export function CompanySelector() {
                                     ))}
                                 </div>
                             </CardContent>
-                            <CardFooter className="p-4 bg-gray-50/30 flex justify-center">
-                                <Button
-                                    variant="ghost"
-                                    className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-semibold gap-2"
-                                    onClick={() => setCompanies([])}
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    Add New Company
-                                </Button>
-                            </CardFooter>
+                            {companies.length === 0 && (
+                                <CardFooter className="p-4 bg-gray-50/30 flex justify-center">
+                                    <Button
+                                        variant="ghost"
+                                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 font-semibold gap-2"
+                                        onClick={() => setCompanies([])}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Add New Company
+                                    </Button>
+                                </CardFooter>
+                            )}
                         </Card>
                     </motion.div>
                 )}

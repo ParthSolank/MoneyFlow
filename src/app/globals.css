@@ -28,12 +28,17 @@
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 231 48% 48%;
-    --radius: 0.75rem;
-    --chart-1: 231 48% 48%;
-    --chart-2: 174 100% 29%;
-    --chart-3: 199 89% 48%;
-    --chart-4: 271 76% 53%;
-    --chart-5: 43 96% 58%;
+    --radius: 1rem;
+    
+    /* Advanced Premium Tokens */
+    --glass-bg: rgba(255, 255, 255, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    
+    --mesh-1: #4f46e5;
+    --mesh-2: #7c3aed;
+    --mesh-3: #db2777;
+    --mesh-4: #2563eb;
   }
 
   .dark {
@@ -78,31 +83,48 @@
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-opacity-40 backdrop-blur-xl border border-white/20 shadow-lg;
-    background-color: var(--glass-bg);
-    border-color: var(--glass-border);
-    box-shadow: var(--glass-shadow);
+  .glass-premium {
+    @apply backdrop-blur-2xl border bg-white/50 dark:bg-black/40 border-white/20 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
   }
 
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500;
+  .hover-lift {
+    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 active:scale-[0.98];
   }
 
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
 
-  @keyframes float {
+  .animate-mesh {
+    background: linear-gradient(-45deg, var(--mesh-1), var(--mesh-2), var(--mesh-3), var(--mesh-4));
+    background-size: 400% 400%;
+    animation: mesh 15s ease infinite;
+  }
 
-    0%,
-    100% {
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes mesh {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
       transform: translateY(0);
     }
+  }
 
-    50% {
-      transform: translateY(-10px);
-    }
+  .reveal {
+    animation: fade-in-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   }
 }
 

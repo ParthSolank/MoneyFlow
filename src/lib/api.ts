@@ -19,79 +19,81 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
         ...options.headers,
     };
 
-    const response = await fetch(`${API_BASE_URL}${url}`, {
-        ...options,
-        headers,
-        credentials: 'include', // Support HttpOnly cookies
-    });
+    try {
+        const response = await fetch(`${API_BASE_URL}${url}`, {
+            ...options,
+            headers,
+            credentials: 'include',
+        });
 
-    if (response.status === 401 && !isServer) {
-        // Attempt refresh
-        try {
-            const oldToken = localStorage.getItem('token');
-
-            const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(oldToken && { Authorization: `Bearer ${oldToken}` }),
-                },
-                credentials: 'include', // MUST include this to send the refresh cookie
-                body: JSON.stringify({ token: oldToken }),
-            });
-
-            if (refreshResponse.ok) {
-                const data = await refreshResponse.json();
-                localStorage.setItem('token', data.token);
-
-                // Retry original request with new token
-                const newHeaders = {
-                    ...headers,
-                    Authorization: `Bearer ${data.token}`,
-                };
-
-                return await fetch(`${API_BASE_URL}${url}`, {
-                    ...options,
-                    headers: newHeaders,
+        if (response.status === 401 && !isServer) {
+            try {
+                const oldToken = localStorage.getItem('token');
+                const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(oldToken && { Authorization: `Bearer ${oldToken}` }),
+                    },
                     credentials: 'include',
+                    body: JSON.stringify({ token: oldToken }),
                 });
-            } else {
-                // Refresh failed, logout
-                localStorage.removeItem('token');
-                if (!isRedirecting && typeof window !== 'undefined' && window.location.pathname !== '/login') {
-                    isRedirecting = true;
-                    window.location.href = '/login';
-                }
-                throw new Error('Session expired');
-            }
-        } catch (refreshError: any) {
-            // If refresh fails with 401 specifically, logout
-            if (!isRedirecting && typeof window !== 'undefined' && window.location.pathname !== '/login') {
-                isRedirecting = true;
-                localStorage.removeItem('token');
-                window.location.href = '/login';
-            }
-            throw refreshError;
-        }
-    }
 
-    return response;
+                if (refreshResponse.ok) {
+                    const data = await refreshResponse.json();
+                    localStorage.setItem('token', data.token);
+                    const newHeaders = { ...headers, Authorization: `Bearer ${data.token}` };
+                    return await fetch(`${API_BASE_URL}${url}`, { ...options, headers: newHeaders, credentials: 'include' });
+                } else {
+                    handleLogout();
+                    throw new Error('Session expired');
+                }
+            } catch (refreshError) {
+                handleLogout();
+                throw refreshError;
+            }
+        }
+
+        return response;
+    } catch (error: any) {
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+            console.error("CRITICAL: API is unreachable. Please ensure the backend server is running.");
+        }
+        throw error;
+    }
+}
+
+function handleLogout() {
+    if (isRedirecting || typeof window === 'undefined') return;
+    isRedirecting = true;
+    localStorage.removeItem('token');
+    localStorage.removeItem('companyId');
+    // Force a small delay to ensure state is cleared before redirect
+    setTimeout(() => {
+        if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+        }
+    }, 100);
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
     if (!res.ok) {
         let errorMsg = res.statusText;
+        let responseData: any = {};
         try {
-            const error = await res.json();
-            errorMsg = error.message || error.error || res.statusText;
-        } catch {
-            // Not a JSON error, stick with statusText
+            responseData = await res.json();
+            errorMsg = responseData.message || responseData.error || res.statusText;
+        } catch { }
+
+        // If it's a 403, we don't logout, but we throw a clear error for the UI
+        if (res.status === 403) {
+            console.error("FORBIDDEN: You do not have permission to access this resource.");
+            throw new Error(`Access Denied (403): ${errorMsg}`);
         }
+
         throw new Error(errorMsg);
     }
-    // For 204 No Content
-    if (res.status === 244) return {} as T;
-    
+    if (res.status === 204 || res.status === 244) return {} as T;
     const text = await res.text();
     return text ? JSON.parse(text) : {} as T;
 }

@@ -8,6 +8,11 @@ using CsvHelper;
 
 namespace MoneyFlowApi.Services;
 
+public class TransactionService
+{
+    private readonly MoneyFlowDbContext _context;
+    private readonly UserContext _userContext;
+    private readonly AuditLogService _auditLog;
     private readonly IEnumerable<IFileParser> _parsers;
 
     public TransactionService(
@@ -30,8 +35,9 @@ namespace MoneyFlowApi.Services;
         {
             query = query.Where(t => t.CompanyId == _userContext.CompanyId.Value);
         }
-        else if (_userContext.Role != "Admin")
+        else
         {
+            // If no company selected, return nothing to enforce isolation
             query = query.Where(t => false);
         }
         

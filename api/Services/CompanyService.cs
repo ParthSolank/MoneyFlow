@@ -19,15 +19,7 @@ public class CompanyService
 
     private IQueryable<Company> GetBaseQuery()
     {
-        var query = _context.Companies.Where(c => !c.IsDeleted);
-        
-        // Normal users only see companies they own
-        if (_userContext.Role != "Admin")
-        {
-            query = query.Where(c => c.OwnerUserId == _userContext.UserId);
-        }
-        
-        return query;
+        return _context.Companies.Where(c => !c.IsDeleted && c.OwnerUserId == _userContext.UserId);
     }
 
     public async Task<List<Company>> GetAllAsync() =>
@@ -41,6 +33,15 @@ public class CompanyService
 
     public async Task<Company> CreateAsync(Company company)
     {
+        // Enforce 1 User 1 Company rule
+        var existingCompanyCount = await _context.Companies
+            .AnyAsync(c => c.OwnerUserId == _userContext.UserId && !c.IsDeleted);
+
+        if (existingCompanyCount)
+        {
+            throw new InvalidOperationException("You already have an active company. Each user is limited to one company.");
+        }
+
         company.CreatedAt = DateTime.UtcNow;
         company.UpdatedAt = DateTime.UtcNow;
         company.IsDeleted = false;

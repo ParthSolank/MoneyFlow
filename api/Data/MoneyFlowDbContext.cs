@@ -40,22 +40,21 @@ public class MoneyFlowDbContext : DbContext
         modelBuilder.Entity<RecurringTransaction>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
+                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
         });
 
         // Configure Company entity
         modelBuilder.Entity<Company>(entity =>
         {
             entity.HasIndex(e => e.OwnerUserId);
-            entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.Role == "Admin" || e.OwnerUserId == _userContext.UserId));
+            entity.HasQueryFilter(e => !e.IsDeleted && e.OwnerUserId == _userContext.UserId);
         });
 
         // Configure FinancialYear entity
         modelBuilder.Entity<FinancialYear>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.Role == "Admin" || e.CompanyId == null || e.CompanyId == _userContext.CompanyId));
+                (e.CompanyId == null || e.CompanyId == _userContext.CompanyId));
         });
 
         // Configure Transaction entity
@@ -75,7 +74,7 @@ public class MoneyFlowDbContext : DbContext
                 .HasDefaultValueSql("GETUTCDATE()");
             
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
+                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
         });
 
         // Configure Ledger entity
@@ -97,7 +96,7 @@ public class MoneyFlowDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
+                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
         });
 
         // Configure User entity
@@ -119,21 +118,21 @@ public class MoneyFlowDbContext : DbContext
         // Configure AuditLog entity
         modelBuilder.Entity<AuditLog>(entity =>
         {
-            entity.HasQueryFilter(e => _userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
+            entity.HasQueryFilter(e => _userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId);
         });
 
         // Configure Category entity
         modelBuilder.Entity<Category>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.Role == "Admin" || e.CompanyId == null || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
+                (e.CompanyId == null || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
         });
 
         // Configure Budget entity
         modelBuilder.Entity<Budget>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
+                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
         });
     }
 }

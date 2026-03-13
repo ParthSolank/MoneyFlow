@@ -183,7 +183,11 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<MoneyFlowDbContext>();
-        context.Database.EnsureCreated(); // Or Migrate() if using migrations fully
+        
+        // Ensure database is created and all migrations are applied
+        // This is better for production than EnsureCreated() as it supports schema evolution
+        context.Database.Migrate(); 
+
 
         if (!context.Users.Any())
         {

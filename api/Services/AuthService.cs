@@ -153,6 +153,11 @@ public class AuthService : IAuthService
 
     private ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
     {
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = false, 
+            ValidateIssuer = false,
+            ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured"))),
             ValidateLifetime = false // Here we are checking expired token, so allow expired
         };

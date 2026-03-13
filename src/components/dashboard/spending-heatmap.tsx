@@ -47,7 +47,25 @@ export function SpendingHeatmap({ transactions, isLoading }: SpendingHeatmapProp
         "bg-orange-600 dark:bg-orange-500 text-white shadow-lg shadow-orange-500/20", // 4
     ];
 
-    if (isLoading) return null;
+    if (isLoading) {
+        return (
+            <Card className="h-full border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800 flex flex-col overflow-hidden">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-orange-200" />
+                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 animate-pulse rounded" />
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col justify-center py-2">
+                    <div className="grid grid-cols-7 gap-1.5 mx-auto">
+                        {Array.from({ length: 28 }).map((_, i) => (
+                            <div key={i} className="h-7 w-7 rounded-md bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card className="h-full border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800 flex flex-col overflow-hidden">

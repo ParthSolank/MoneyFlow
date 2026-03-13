@@ -19,7 +19,8 @@ public class SecurityTests
             .UseInMemoryDatabase(databaseName: "SecurityTestDb_Registration")
             .Options;
 
-        using var context = new MoneyFlowDbContext(options);
+        var userContext = new UserContext { UserId = 1, CompanyId = 1, Role = "User" };
+        using var context = new MoneyFlowDbContext(options, userContext);
         var configMock = new Mock<IConfiguration>();
         configMock.Setup(c => c["JwtSettings:Secret"]).Returns("LongEnoughSecretForTestingPurpose123!");
         

@@ -58,6 +58,8 @@ public class UserContextMiddleware
                         else
                         {
                             // Optional: Log unauthorized access attempt
+                            var logger = context.RequestServices.GetRequiredService<ILogger<UserContextMiddleware>>();
+                            logger.LogWarning("Unauthorized access attempt to Company {CompanyId} by User {UserId}", companyId, userContext.UserId);
                             // userContext.CompanyId remains null, query filters will return empty
                         }
                     }

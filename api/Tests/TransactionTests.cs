@@ -17,13 +17,13 @@ public class TransactionTests
             .UseInMemoryDatabase(databaseName: "TransactionTestDb_Balance")
             .Options;
 
-        using var context = new MoneyFlowDbContext(options);
+        var userContext = new UserContext { UserId = 1, CompanyId = 1, Role = "User" };
+        using var context = new MoneyFlowDbContext(options, userContext);
         
         var ledger = new Ledger { Id = 1, Name = "Test Wallet", Balance = 1000, AccountType = "bank" };
         context.Ledgers.Add(ledger);
         await context.SaveChangesAsync();
 
-        var userContext = new UserContext { UserId = 1, CompanyId = 1, Role = "User" };
         var auditLogMock = new Mock<AuditLogService>(context, userContext);
         
         var service = new TransactionService(context, userContext, auditLogMock.Object, Enumerable.Empty<IFileParser>());

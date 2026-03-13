@@ -6,6 +6,7 @@ using MoneyFlowApi.Attributes;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using MoneyFlowApi.Models.DTOs;
 
 namespace MoneyFlowApi.Controllers;
 
