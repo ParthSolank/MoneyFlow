@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MoneyFlowApi.Data;
 
@@ -11,9 +12,11 @@ using MoneyFlowApi.Data;
 namespace MoneyFlowApi.Data.Migrations
 {
     [DbContext(typeof(MoneyFlowDbContext))]
-    partial class MoneyFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260313163109_AddGoalsTable")]
+    partial class AddGoalsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -297,9 +300,6 @@ namespace MoneyFlowApi.Data.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("LedgerId")
-                        .HasColumnType("int");
-
                     b.Property<decimal>("TargetAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18, 2)");
@@ -314,45 +314,7 @@ namespace MoneyFlowApi.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LedgerId");
-
                     b.ToTable("Goals");
-                });
-
-            modelBuilder.Entity("MoneyFlowApi.Models.GoalContribution", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18, 2)");
-
-                    b.Property<int>("CompanyId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("ContributionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("GoalId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("LedgerId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GoalId");
-
-                    b.HasIndex("LedgerId");
-
-                    b.ToTable("GoalContributions");
                 });
 
             modelBuilder.Entity("MoneyFlowApi.Models.Ledger", b =>
@@ -638,32 +600,6 @@ namespace MoneyFlowApi.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
-                });
-
-            modelBuilder.Entity("MoneyFlowApi.Models.Goal", b =>
-                {
-                    b.HasOne("MoneyFlowApi.Models.Ledger", "Ledger")
-                        .WithMany()
-                        .HasForeignKey("LedgerId");
-
-                    b.Navigation("Ledger");
-                });
-
-            modelBuilder.Entity("MoneyFlowApi.Models.GoalContribution", b =>
-                {
-                    b.HasOne("MoneyFlowApi.Models.Goal", "Goal")
-                        .WithMany()
-                        .HasForeignKey("GoalId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MoneyFlowApi.Models.Ledger", "Ledger")
-                        .WithMany()
-                        .HasForeignKey("LedgerId");
-
-                    b.Navigation("Goal");
-
-                    b.Navigation("Ledger");
                 });
 
             modelBuilder.Entity("MoneyFlowApi.Models.RecurringTransaction", b =>

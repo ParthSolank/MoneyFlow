@@ -12,6 +12,8 @@ import { useAuth } from "@/context/auth-context";
 import { userApi, budgetApi, BudgetStatus, Transaction, Ledger } from "@/lib/api-client";
 import { usePermissions } from "@/hooks/use-permissions";
 import { FYSelector } from "@/components/fy-selector";
+import { SmartInsights } from "@/components/dashboard/smart-insights";
+import { CashFlowCalendar } from "@/components/dashboard/cash-flow-calendar";
 import { getCurrentFinancialYear } from "@/lib/financial-year-utils";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, useMemo } from "react";
@@ -94,6 +96,8 @@ export default function Dashboard() {
         <SummaryCards startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
       </div>
 
+      <SmartInsights />
+
       {!loadingLedgers && topLedgers.length === 0 && (
           <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden relative group">
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -133,6 +137,8 @@ export default function Dashboard() {
       )}
 
       <DashboardCharts startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
+
+      <CashFlowCalendar />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <div className="lg:col-span-4 h-full">

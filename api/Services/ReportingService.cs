@@ -125,4 +125,101 @@ public class ReportingService
 
         return document.GeneratePdf();
     }
+    public async Task<List<SmartInsight>> GetSmartInsightsAsync()
+    {
+        var now = DateTime.UtcNow;
+        var currentMonthStart = new DateTime(now.Year, now.Month, 1).ToString("yyyy-MM-dd");
+        var prevMonth = now.AddMonths(-1);
+        var prevMonthStart = new DateTime(prevMonth.Year, prevMonth.Month, 1).ToString("yyyy-MM-dd");
+        var prevMonthEnd = new DateTime(now.Year, now.Month, 1).AddDays(-1).ToString("yyyy-MM-dd");
+
+        var currentTransactions = await _context.Transactions
+            .Where(t => string.Compare(t.Date, currentMonthStart) >= 0 && t.Type == "expense")
+            .ToListAsync();
+
+        var prevTransactions = await _context.Transactions
+            .Where(t => string.Compare(t.Date, prevMonthStart) >= 0 && string.Compare(t.Date, prevMonthEnd) <= 0 && t.Type == "expense")
+            .ToListAsync();
+
+        var insights = new List<SmartInsight>();
+
+        // 1. Overall Trend
+        var currentTotal = currentTransactions.Sum(t => t.Amount);
+        var prevTotal = prevTransactions.Sum(t => t.Amount);
+
+        if (prevTotal > 0)
+        {
+            var diff = ((currentTotal - prevTotal) / prevTotal) * 100;
+            if (diff > 10)
+            {
+                insights.Add(new SmartInsight 
+                { 
+                    Type = "warning", 
+                    Title = "Spending Alert", 
+                    Message = $"Your spending is up {diff:N0}% compared to last month. Consider reviewing your top categories."
+                });
+            }
+            else if (diff < -10)
+            {
+                insights.Add(new SmartInsight 
+                { 
+                    Type = "success", 
+                    Title = "Great Progress!", 
+                    Message = $"You've spent {Math.Abs(diff):N0}% less than last month. Keep it up!"
+                });
+            }
+        }
+
+        // 2. Category Analysis
+        var currentByCat = currentTransactions.GroupBy(t => t.Category).Select(g => new { Category = g.Key, Amount = g.Sum(t => t.Amount) });
+        var prevByCat = prevTransactions.GroupBy(t => t.Category).Select(g => new { Category = g.Key, Amount = g.Sum(t => t.Amount) });
+
+        foreach (var cur in currentByCat)
+        {
+            var prev = prevByCat.FirstOrDefault(p => p.Category == cur.Category);
+            if (prev != null && prev.Amount > 0)
+            {
+                var diff = ((cur.Amount - prev.Amount) / prev.Amount) * 100;
+                if (diff > 20)
+                {
+                    insights.Add(new SmartInsight 
+                    { 
+                        Type = "info", 
+                        Title = $"{cur.Category} Check", 
+                        Message = $"You've spent ₹{(cur.Amount - prev.Amount):N0} more on {cur.Category} than last month."
+                    });
+                }
+            }
+        }
+
+        // 3. Goal Analysis
+        var goals = await _context.Goals.Where(g => g.CurrentAmount < g.TargetAmount).ToListAsync();
+        foreach (var goal in goals)
+        {
+            var remaining = goal.TargetAmount - goal.CurrentAmount;
+            if (goal.Deadline.HasValue)
+            {
+                var daysLeft = (goal.Deadline.Value - DateTime.UtcNow).TotalDays;
+                if (daysLeft > 0)
+                {
+                    var neededPerDay = remaining / (decimal)daysLeft;
+                    insights.Add(new SmartInsight 
+                    { 
+                        Type = "goal", 
+                        Title = goal.Title, 
+                        Message = $"You need to save ₹{neededPerDay:N0} daily to reach your target by {goal.Deadline.Value:dd MMM}."
+                    });
+                }
+            }
+        }
+
+        return insights;
+    }
+}
+
+public class SmartInsight
+{
+    public string Type { get; set; } = string.Empty; // success, warning, info, goal
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
 }

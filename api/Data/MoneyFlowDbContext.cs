@@ -22,6 +22,8 @@ public class MoneyFlowDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<Budget> Budgets { get; set; }
     public DbSet<RecurringTransaction> RecurringTransactions { get; set; }
+    public DbSet<Goal> Goals { get; set; }
+    public DbSet<GoalContribution> GoalContributions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -132,6 +134,19 @@ public class MoneyFlowDbContext : DbContext
         modelBuilder.Entity<Budget>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted && 
+                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
+        });
+
+        // Configure Goal entity
+        modelBuilder.Entity<Goal>(entity =>
+        {
+            entity.HasQueryFilter(e => !e.IsDeleted && 
+                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
+        });
+
+        modelBuilder.Entity<GoalContribution>(entity =>
+        {
+            entity.HasQueryFilter(e => 
                 (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
         });
     }

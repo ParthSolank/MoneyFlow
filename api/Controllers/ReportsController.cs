@@ -26,4 +26,10 @@ public class ReportsController : ControllerBase
         
         return File(pdfBytes, "application/pdf", fileName);
     }
+
+    [HttpGet("smart-insights")]
+    public async Task<ActionResult<List<SmartInsight>>> GetSmartInsights()
+    {
+        return Ok(await _reportingService.GetSmartInsightsAsync());
+    }
 }

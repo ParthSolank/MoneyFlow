@@ -1,168 +1,196 @@
 "use client"
 
-import { LayoutDashboard, ReceiptText, NotebookTabs, LogOut, Settings, Wallet, ShieldAlert, Users, CreditCard, PieChart, Lock, Database, Tag, Clock } from "lucide-react"
+import { LayoutDashboard, ReceiptText, NotebookTabs, LogOut, Settings, Wallet, ShieldAlert, Users, CreditCard, PieChart, Lock, Database, Tag, Clock, PanelLeft, Target } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { motion } from "framer-motion"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarSeparator
-} from "@/components/ui/sidebar"
-
+import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
+import { usePermissions } from "@/hooks/use-permissions"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
-const menuItems = [
-  { title: "Dashboard", icon: LayoutDashboard, url: "/", color: "text-blue-500", section: "CORE" as const, page: "DASHBOARD" as const },
-  { title: "Transactions", icon: ReceiptText, url: "/transactions", color: "text-emerald-500", section: "CORE" as const, page: "TRANSACTIONS" as const },
-  { title: "Ledgers", icon: NotebookTabs, url: "/ledgers", color: "text-purple-500", section: "CORE" as const, page: "LEDGERS" as const },
-  { title: "Categories", icon: Tag, url: "/categories", color: "text-amber-500", section: "CORE" as const, page: "CATEGORIES" as const }, 
-  { title: "Budgets", icon: PieChart, url: "/budgets", color: "text-rose-500", section: "CORE" as const, page: "BUDGETS" as const }, 
-  { title: "Recurring", icon: Clock, url: "/recurring", color: "text-indigo-500", section: "CORE" as const, page: "RECURRING" as const },
+interface MenuItem {
+  title: string
+  icon: any
+  url: string
+  section: "CORE" | "ADMIN"
+  page: any
+}
+
+const menuItems: MenuItem[] = [
+  { title: "Dashboard", icon: LayoutDashboard, url: "/", section: "CORE", page: "DASHBOARD" },
+  { title: "Transactions", icon: ReceiptText, url: "/transactions", section: "CORE", page: "TRANSACTIONS" },
+  { title: "Ledgers", icon: NotebookTabs, url: "/ledgers", section: "CORE", page: "LEDGERS" },
+  { title: "Categories", icon: Tag, url: "/categories", section: "CORE", page: "CATEGORIES" },
+  { title: "Budgets", icon: PieChart, url: "/budgets", section: "CORE", page: "BUDGETS" },
+  { title: "Goals", icon: Target, url: "/goals", section: "CORE", page: "GOALS" },
+  { title: "Recurring", icon: Clock, url: "/recurring", section: "CORE", page: "RECURRING" },
 ]
 
-import { usePermissions } from "@/hooks/use-permissions"
+const adminItems: MenuItem[] = [
+  { title: "Users", icon: Users, url: "/admin/users", section: "ADMIN", page: "USER_MANAGEMENT" },
+  { title: "Access", icon: Lock, url: "/admin/access-control", section: "ADMIN", page: "ACCESS_CONTROL" },
+  { title: "Masters", icon: Database, url: "/masters", section: "ADMIN", page: "MASTERS" },
+  { title: "Audit", icon: ShieldAlert, url: "/admin/audit", section: "ADMIN", page: "SYSTEM_AUDIT" },
+]
 
-export function AppSidebar() {
+export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle: () => void }) {
   const pathname = usePathname()
-  const { user, logout } = useAuth();
-  const { canView } = usePermissions();
-
-  const isAdmin = user?.role === "Admin";
+  const { user, logout } = useAuth()
+  const { canView } = usePermissions()
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-indigo-100/50 bg-gradient-to-b from-white to-indigo-50/30">
-      <SidebarHeader className="border-b border-indigo-50 p-2 group-data-[collapsible=icon]:p-1">
-        <div className="flex items-center gap-3 p-2">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-200">
-            <Wallet className="h-6 w-6" />
-          </div>
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-lg font-bold tracking-tight text-indigo-950 leading-none">MoneyFlow</span>
-            <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider mt-1">Pro Finance</span>
-          </div>
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent className="px-3 py-4 space-y-6">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-4 text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2">
-            Main Menu
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {menuItems.map((item) => {
-                if (!canView(item.section, item.page)) return null;
-                const isActive = pathname === item.url;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      className={`
-                        w-full justify-start gap-4 px-4 py-3 h-auto rounded-xl transition-all duration-200
-                        ${isActive
-                          ? "bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                        }
-                      `}
-                    >
-                      <Link href={item.url} className="flex items-center w-full">
-                        <item.icon className={`h-5 w-5 ${isActive ? "text-indigo-600" : item.color} ${isActive ? "fill-indigo-200" : ""}`} />
-                        <span className="font-medium text-sm ml-3">{item.title}</span>
-                        {isActive && (
-                          <motion.div
-                            layoutId="active-indicator"
-                            className="absolute left-0 w-1 h-8 bg-indigo-600 rounded-r-full"
-                          />
-                        )}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {(canView("ADMIN", "USER_MANAGEMENT") || 
-          canView("ADMIN", "ACCESS_CONTROL") || 
-          canView("ADMIN", "MASTERS") || 
-          canView("ADMIN", "SYSTEM_AUDIT")) && (
-          <SidebarGroup className="mt-auto">
-            <SidebarSeparator className="bg-indigo-100/50 mb-2 opacity-50" />
-            <SidebarGroupLabel className="px-4 text-[10px] font-black text-rose-300 uppercase tracking-[0.15em] mb-2 group-data-[collapsible=icon]:hidden">
-              Management
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-1.5">
-                {[
-                  { title: "Users", icon: Users, url: "/admin/users", page: "USER_MANAGEMENT" as const },
-                  { title: "Access", icon: Lock, url: "/admin/access-control", page: "ACCESS_CONTROL" as const },
-                  { title: "Masters", icon: Database, url: "/masters", page: "MASTERS" as const },
-                  { title: "Audit", icon: ShieldAlert, url: "/admin/audit", page: "SYSTEM_AUDIT" as const }
-                ].map((item) => (
-                  canView("ADMIN", item.page) && (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        tooltip={item.title}
-                        className={`
-                          w-full justify-start gap-4 px-4 py-3 h-auto rounded-xl transition-all duration-300
-                          ${pathname === item.url 
-                            ? "bg-rose-50 text-rose-700 shadow-sm ring-1 ring-rose-200" 
-                            : "text-gray-500 hover:bg-rose-50/50 hover:text-rose-600"
-                          }
-                        `}
-                      >
-                        <Link href={item.url} className="flex items-center w-full">
-                          <item.icon className={`h-5 w-5 ${pathname === item.url ? 'text-rose-600' : 'text-rose-300'}`} />
-                          <span className="font-semibold text-sm ml-3 group-data-[collapsible=icon]:hidden">{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+    <TooltipProvider delayDuration={0}>
+      <aside 
+        className={cn(
+          "h-screen bg-white border-r border-gray-100 flex flex-col py-6 shrink-0 z-50 transition-all duration-300 ease-in-out sticky top-0",
+          isExpanded ? "w-[260px]" : "w-[72px]"
         )}
-      </SidebarContent>
-
-      <SidebarFooter className="border-t border-indigo-50 p-2 space-y-2 bg-indigo-50/20 backdrop-blur-sm">
-        <SidebarMenu>
-          <SidebarMenuItem>
-             <div className="flex items-center gap-3 p-2 rounded-xl group-data-[collapsible=icon]:p-0 transition-all">
-                <div className="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 flex items-center justify-center text-white font-black group-data-[collapsible=icon]:mx-auto shadow-lg shadow-indigo-200/50 cursor-pointer hover:scale-105 transition-transform">
-                   {user?.username?.substring(0, 1).toUpperCase() || "A"}
-                </div>
-                <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-                   <span className="text-sm font-bold text-indigo-950 truncate leading-none">{user?.username || "Admin"}</span>
-                   <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider mt-1">{user?.role || "User"}</span>
-                </div>
-             </div>
-          </SidebarMenuItem>
+      >
+        {/* Branding/Logo & Toggle */}
+        <div className="mb-10 px-3 flex items-center justify-between">
+          <button 
+            onClick={toggle}
+            className="flex items-center gap-3 transition-transform active:scale-95 text-left"
+          >
+            <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-200">
+              <Wallet className="w-6 h-6" />
+            </div>
+            {isExpanded && (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex flex-col whitespace-nowrap"
+              >
+                <span className="text-sm font-bold text-gray-900">MoneyFlow</span>
+                <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Pro Edition</span>
+              </motion.div>
+            )}
+          </button>
           
-          <SidebarMenuItem className="mt-1">
-            <SidebarMenuButton
-              tooltip="Sign Out"
-              onClick={logout}
-              className="w-full justify-start gap-4 px-4 py-2.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+          {isExpanded && (
+            <button 
+              onClick={toggle}
+              className="p-2 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-purple-600 transition-colors"
             >
-              <LogOut className="h-5 w-5" />
-              <span className="font-bold text-[10px] uppercase tracking-widest group-data-[collapsible=icon]:hidden">Sign Out</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+              <PanelLeft className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Navigation Items */}
+        <nav className="flex-1 w-full px-3 flex flex-col gap-2 overflow-y-auto no-scrollbar">
+          {menuItems.map((item) => {
+            if (!canView(item.section, item.page)) return null
+            const isActive = pathname === item.url
+            return (
+              <SidebarItem key={item.url} item={item} isActive={isActive} isExpanded={isExpanded} />
+            )
+          })}
+
+          <div className="w-full h-[1px] bg-gray-50 my-4" />
+
+          {adminItems.map((item) => {
+            if (!canView(item.section, item.page)) return null
+            const isActive = pathname === item.url
+            return (
+              <SidebarItem key={item.url} item={item} isActive={isActive} isExpanded={isExpanded} isDestructive />
+            )
+          })}
+        </nav>
+
+        {/* Footer section */}
+        <div className="mt-auto px-3 flex flex-col gap-4 w-full">
+          <div className={cn(
+            "flex items-center rounded-xl transition-all p-2",
+            isExpanded ? "bg-purple-50" : "justify-center"
+          )}>
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md relative">
+              {user?.username?.substring(0, 1).toUpperCase() || "A"}
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+            </div>
+            {isExpanded && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="ml-3 flex flex-col min-w-0"
+              >
+                <span className="text-sm font-bold text-gray-900 truncate">{user?.username || "Admin"}</span>
+                <span className="text-[10px] text-purple-600 font-medium uppercase tracking-wider">{user?.role || "User"}</span>
+              </motion.div>
+            )}
+          </div>
+
+          <button 
+            onClick={logout}
+            className={cn(
+              "flex items-center rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all p-2",
+              isExpanded ? "gap-3 px-3" : "justify-center w-12 h-12 mx-auto"
+            )}
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            {isExpanded && <span className="text-sm font-bold">Sign Out</span>}
+          </button>
+        </div>
+      </aside>
+    </TooltipProvider>
+  )
+}
+
+function SidebarItem({ item, isActive, isExpanded, isDestructive = false }: { item: MenuItem; isActive: boolean; isExpanded: boolean; isDestructive?: boolean }) {
+  const content = (
+    <Link
+      href={item.url}
+      className={cn(
+        "relative flex items-center rounded-xl transition-all duration-300 group h-12",
+        isActive 
+          ? "bg-purple-600 text-white shadow-lg shadow-purple-200" 
+          : "text-gray-400 hover:bg-gray-100 hover:text-gray-900",
+        isExpanded ? "px-4 gap-4 w-full" : "justify-center w-12 mx-auto"
+      )}
+    >
+      <item.icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300", !isActive && "group-hover:scale-110")} />
+      
+      {isExpanded && (
+        <motion.span 
+          initial={{ opacity: 0, x: -5 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-sm font-bold whitespace-nowrap"
+        >
+          {item.title}
+        </motion.span>
+      )}
+
+      {isActive && !isExpanded && (
+        <motion.div
+          layoutId="active-pill"
+          className="absolute -left-3 w-1.5 h-6 bg-purple-600 rounded-r-full"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        />
+      )}
+
+      {!isActive && isDestructive && !isExpanded && (
+         <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-rose-400 opacity-50" />
+      )}
+    </Link>
+  )
+
+  if (isExpanded) return content
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {content}
+      </TooltipTrigger>
+      <TooltipContent side="right" className="font-medium">
+        {item.title}
+      </TooltipContent>
+    </Tooltip>
   )
 }

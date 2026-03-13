@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserNav } from "@/components/user-nav";
 import { useAuth } from "@/context/auth-context";
@@ -15,6 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { user, companyId, loading } = useAuth();
     const [mounted, setMounted] = useState(false);
+    const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
     
     const isAuthPage = pathname === "/login" || pathname === "/register";
 
@@ -92,30 +92,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="flex h-screen overflow-hidden">
-            <SidebarProvider defaultOpen={true}>
-                <AppSidebar />
-                <SidebarInset>
-                    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-6 sticky top-0 bg-background/80 backdrop-blur-md z-10">
-                        <SidebarTrigger />
-                        <div className="flex-1" />
-                        <div className="flex items-center gap-4">
-                            <UserNav />
-                        </div>
-                    </header>
-                    <main className="flex-1 overflow-y-auto p-6 md:p-8">
-                        <motion.div
-                            key={pathname}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
-                            className="max-w-[1600px] mx-auto min-h-full"
-                        >
-                            {children}
-                        </motion.div>
-                    </main>
-                </SidebarInset>
-            </SidebarProvider>
+        <div className="flex h-screen bg-background overflow-hidden font-body">
+            <AppSidebar 
+                isExpanded={isSidebarExpanded} 
+                toggle={() => setIsSidebarExpanded(!isSidebarExpanded)} 
+            />
+            <div className="flex flex-col flex-1 min-w-0 h-full">
+                <header className="flex h-16 shrink-0 items-center justify-between px-8 border-b border-gray-100 bg-white/80 backdrop-blur-md z-10">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">MoneyFlow Pro</h2>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <UserNav />
+                    </div>
+                </header>
+                <main className="flex-1 overflow-y-auto p-8 lg:p-10 bg-gray-50/30">
+                    <motion.div
+                        key={pathname}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
+                        className="max-w-[1600px] mx-auto w-full min-h-full"
+                    >
+                        {children}
+                    </motion.div>
+                </main>
+            </div>
         </div>
     );
 }

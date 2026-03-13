@@ -29,6 +29,7 @@ builder.Services.AddScoped<CompanyService>();
 builder.Services.AddScoped<FinancialYearService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<BudgetService>();
+builder.Services.AddScoped<GoalService>();
 builder.Services.AddScoped<ReportingService>();
 builder.Services.AddScoped<UserContext>();
 
