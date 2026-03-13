@@ -39,7 +39,17 @@ const adminItems: MenuItem[] = [
   { title: "Audit", icon: ShieldAlert, url: "/admin/audit", section: "ADMIN", page: "SYSTEM_AUDIT" },
 ]
 
-export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle: () => void }) {
+export function AppSidebar({ 
+  isExpanded, 
+  isMobileOpen = false, 
+  toggle, 
+  closeMobile 
+}: { 
+  isExpanded: boolean; 
+  isMobileOpen?: boolean; 
+  toggle: () => void; 
+  closeMobile?: () => void; 
+}) {
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const { canView } = usePermissions()
@@ -48,8 +58,9 @@ export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle
     <TooltipProvider delayDuration={0}>
       <aside 
         className={cn(
-          "h-screen bg-white border-r border-gray-100 flex flex-col py-6 shrink-0 z-50 transition-all duration-300 ease-in-out sticky top-0",
-          isExpanded ? "w-[260px]" : "w-[72px]"
+          "h-screen bg-white border-r border-gray-100 flex flex-col py-6 shrink-0 z-50 transition-all duration-300 ease-in-out fixed lg:sticky top-0 left-0",
+          isExpanded ? "w-[260px]" : "w-[72px]",
+          !isMobileOpen ? "-translate-x-full lg:translate-x-0" : "translate-x-0 w-[260px] shadow-2xl shadow-indigo-200"
         )}
       >
         {/* Branding/Logo & Toggle */}
@@ -61,7 +72,7 @@ export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle
             <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-200">
               <Wallet className="w-6 h-6" />
             </div>
-            {isExpanded && (
+            {(isExpanded || isMobileOpen) && (
               <motion.div 
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -73,9 +84,9 @@ export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle
             )}
           </button>
           
-          {isExpanded && (
+          {(isExpanded || isMobileOpen) && (
             <button 
-              onClick={toggle}
+              onClick={isMobileOpen ? closeMobile : toggle}
               className="p-2 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-purple-600 transition-colors"
             >
               <PanelLeft className="w-4 h-4" />
@@ -89,7 +100,7 @@ export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle
             if (!canView(item.section, item.page)) return null
             const isActive = pathname === item.url
             return (
-              <SidebarItem key={item.url} item={item} isActive={isActive} isExpanded={isExpanded} />
+              <SidebarItem key={item.url} item={item} isActive={isActive} isExpanded={isExpanded || isMobileOpen} />
             )
           })}
 
@@ -108,13 +119,13 @@ export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle
         <div className="mt-auto px-3 flex flex-col gap-4 w-full">
           <div className={cn(
             "flex items-center rounded-xl transition-all p-2",
-            isExpanded ? "bg-purple-50" : "justify-center"
+            (isExpanded || isMobileOpen) ? "bg-purple-50" : "justify-center"
           )}>
             <div className="w-10 h-10 shrink-0 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md relative">
               {user?.username?.substring(0, 1).toUpperCase() || "A"}
               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
             </div>
-            {isExpanded && (
+            {(isExpanded || isMobileOpen) && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -130,21 +141,21 @@ export function AppSidebar({ isExpanded, toggle }: { isExpanded: boolean; toggle
             onClick={logout}
             className={cn(
               "flex items-center rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all p-2",
-              isExpanded ? "gap-3 px-3" : "justify-center w-12 h-12 mx-auto"
+              (isExpanded || isMobileOpen) ? "gap-3 px-3" : "justify-center w-12 h-12 mx-auto"
             )}
           >
             <LogOut className="w-5 h-5 shrink-0" />
-            {isExpanded && <span className="text-sm font-bold">Sign Out</span>}
+            {(isExpanded || isMobileOpen) && <span className="text-sm font-bold">Sign Out</span>}
           </button>
 
           <div className={cn(
             "mt-2 mb-2 px-2 py-3 rounded-xl border border-dashed border-gray-100 flex items-center gap-2 overflow-hidden bg-gray-50/50",
-            !isExpanded && "justify-center"
+            !(isExpanded || isMobileOpen) && "justify-center"
           )}>
-            <div className="w-6 h-6 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600 border border-indigo-200 uppercase">
+            <div className="w-6 h-6 shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-[8px] font-black text-indigo-600 border border-indigo-200 uppercase">
               P
             </div>
-            {isExpanded && (
+            {(isExpanded || isMobileOpen) && (
               <motion.div 
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}

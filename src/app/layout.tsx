@@ -8,6 +8,12 @@ import { AppShell } from '@/components/layout/app-shell';
 export const metadata: Metadata = {
   title: 'MoneyFlow Pro | Personal Accounting',
   description: 'Manage your personal accounting and finances efficiently.',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
 };
 
 export default function RootLayout({

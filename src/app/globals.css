@@ -69,8 +69,16 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    height: 100%;
+  }
+
   body {
     @apply bg-background text-foreground font-body;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
   }
 }
 
