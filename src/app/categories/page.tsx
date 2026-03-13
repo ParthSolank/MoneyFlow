@@ -48,11 +48,13 @@ export default function CategoriesPage() {
         type: 'income' | 'expense' | 'both';
         icon: string;
         color: string;
+        keywords: string;
     }>({
         name: "",
         type: "expense",
         icon: "Tag",
-        color: "#6366f1"
+        color: "#6366f1",
+        keywords: ""
     });
 
     useEffect(() => {
@@ -78,7 +80,8 @@ export default function CategoriesPage() {
                 name: category.name,
                 type: category.type as any,
                 icon: category.icon,
-                color: category.color
+                color: category.color,
+                keywords: category.keywords || ""
             });
         } else {
             setEditingCategory(null);
@@ -86,7 +89,8 @@ export default function CategoriesPage() {
                 name: "",
                 type: "expense",
                 icon: "Tag",
-                color: "#6366f1"
+                color: "#6366f1",
+                keywords: ""
             });
         }
         setIsDialogOpen(true);
@@ -215,6 +219,21 @@ export default function CategoriesPage() {
                                         />
                                     </div>
                                 </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-1 flex items-center gap-2">
+                                        Auto-Categorization Keywords
+                                        <Badge variant="outline" className="text-[10px] uppercase font-black px-1.5 py-0">Smart</Badge>
+                                    </label>
+                                    <textarea
+                                        value={formData.keywords}
+                                        onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+                                        placeholder="e.g., Zomato, Amazon, Uber, Petrol (comma separated)"
+                                        className="w-full min-h-[80px] p-3 rounded-xl border border-gray-200 bg-white/50 focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground ml-1">
+                                        Imported transactions containing these words will be grouped here automatically.
+                                    </p>
+                                </div>
                             </div>
                             <DialogFooter>
                                 <Button
@@ -334,6 +353,19 @@ export default function CategoriesPage() {
                                                 </Badge>
                                             </div>
                                             <p className="text-sm text-muted-foreground">Updated {mounted ? new Date().toLocaleDateString() : '...'}</p>
+                                            
+                                            {category.keywords && (
+                                                <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-gray-50 dark:border-gray-800">
+                                                    {category.keywords.split(',').slice(0, 3).map((kw, i) => (
+                                                        <Badge key={i} variant="secondary" className="text-[9px] font-bold px-2 py-0 h-4 bg-gray-100/50 text-gray-500 rounded-sm">
+                                                            {kw.trim()}
+                                                        </Badge>
+                                                    ))}
+                                                    {category.keywords.split(',').length > 3 && (
+                                                        <span className="text-[9px] font-black text-gray-400 ml-1">+{category.keywords.split(',').length - 3}</span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.div>
                                 ))}

@@ -53,6 +53,7 @@ export interface Category {
     type: 'income' | 'expense' | 'both';
     icon: string;
     color: string;
+    keywords?: string;
     companyId?: number;
 }
 
