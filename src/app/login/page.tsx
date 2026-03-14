@@ -173,11 +173,17 @@ export default function LoginPage() {
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="pb-8">
+          <CardFooter className="pb-8 flex flex-col gap-2">
             <motion.p variants={itemVariants} className="text-sm text-center w-full text-gray-500">
               Don&apos;t have an account?{" "}
               <Link href="/register" className="text-indigo-600 hover:text-indigo-700 hover:underline font-semibold transition-colors">
                 Sign up
+              </Link>
+            </motion.p>
+            <motion.p variants={itemVariants} className="text-sm text-center w-full text-gray-500">
+              Need to activate?{" "}
+              <Link href="/activate" className="text-indigo-600 hover:text-indigo-700 hover:underline font-semibold transition-colors">
+                Verify Email
               </Link>
             </motion.p>
           </CardFooter>

@@ -27,6 +27,11 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
         });
 
         if (response.status === 401 && !isServer) {
+            // Don't intercept 401s on auth routes, let the component handle the specific active/unauthorized message
+            if (url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/activate')) {
+                return response;
+            }
+
             try {
                 const oldToken = localStorage.getItem('token');
                 const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
