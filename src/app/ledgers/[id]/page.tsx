@@ -97,6 +97,15 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
     }
   }, [id])
 
+  const ledgerTransactions = useMemo(() => ledger?.transactions || [], [ledger?.transactions]);
+
+  const displayBalance = useMemo(() => {
+    if (!ledger) return 0;
+    return ledger.balance + ledgerTransactions.reduce((acc, tx) => {
+      return tx.type === 'income' ? acc + tx.amount : acc - tx.amount;
+    }, 0);
+  }, [ledger, ledgerTransactions]);
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -108,14 +117,6 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
   if (error || !ledger) {
     return notFound()
   }
-
-  const ledgerTransactions = useMemo(() => ledger.transactions || [], [ledger.transactions]);
-
-  const displayBalance = useMemo(() => {
-    return ledger.balance + ledgerTransactions.reduce((acc, tx) => {
-      return tx.type === 'income' ? acc + tx.amount : acc - tx.amount;
-    }, 0);
-  }, [ledger.balance, ledgerTransactions]);
 
   const IconComp = iconMap[ledger.icon] || Wallet
 
