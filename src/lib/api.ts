@@ -14,7 +14,7 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
 
     const headers = {
         'Content-Type': 'application/json',
-        'bypass-tunnel-reminder': 'true',
+        'Bypass-Tunnel-Reminder': 'true',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...(companyId && { 'X-Company-Id': companyId }),
         ...options.headers,
