@@ -45,8 +45,13 @@ public class AuthService : IAuthService
             ActivationKey = activationKey,
             Rights = new List<string> 
             { 
-                "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE",
-                "CORE_LEDGERS_VIEW", "VIEW_REPORTS"
+                "CORE_DASHBOARD_VIEW",
+                "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT",
+                "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE",
+                "CORE_CATEGORIES_VIEW",
+                "CORE_BUDGETS_VIEW",
+                "CORE_GOALS_VIEW",
+                "CORE_RECURRING_VIEW"
             },
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow

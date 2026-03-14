@@ -9,6 +9,7 @@ export type PermissionPage =
     | "TRANSACTIONS" 
     | "LEDGERS" 
     | "CATEGORIES"
+    | "GOALS"
     | "MASTERS"
     | "BUDGETS"
     | "RECURRING"
