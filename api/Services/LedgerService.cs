@@ -42,6 +42,7 @@ public class LedgerService
     // Get ledger by ID
     public async Task<Ledger?> GetByIdAsync(int id) =>
         await GetBaseQuery()
+            .Include(l => l.Transactions.Where(t => !t.IsDeleted))
             .FirstOrDefaultAsync(l => l.Id == id);
 
     // Get ledgers by account type (bank/credit)

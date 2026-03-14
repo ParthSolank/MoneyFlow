@@ -42,7 +42,7 @@ public class MoneyFlowDbContext : DbContext
         modelBuilder.Entity<RecurringTransaction>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
+                (_userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
         });
 
         // Configure Company entity
@@ -56,7 +56,7 @@ public class MoneyFlowDbContext : DbContext
         modelBuilder.Entity<FinancialYear>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (e.CompanyId == null || e.CompanyId == _userContext.CompanyId));
+                (_userContext.Role == "Admin" || e.CompanyId == null || e.CompanyId == _userContext.CompanyId));
         });
 
         // Configure Transaction entity
@@ -76,7 +76,7 @@ public class MoneyFlowDbContext : DbContext
                 .HasDefaultValueSql("GETUTCDATE()");
             
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
+                (_userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
         });
 
         // Configure Ledger entity
@@ -98,7 +98,7 @@ public class MoneyFlowDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
+                (_userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
         });
 
         // Configure User entity
@@ -141,7 +141,7 @@ public class MoneyFlowDbContext : DbContext
         modelBuilder.Entity<Goal>(entity =>
         {
             entity.HasQueryFilter(e => !e.IsDeleted && 
-                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
+                (_userContext.Role == "Admin" || (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId)));
         });
 
         modelBuilder.Entity<GoalContribution>(entity =>

@@ -35,9 +35,9 @@ public class TransactionService
         {
             query = query.Where(t => t.CompanyId == _userContext.CompanyId.Value);
         }
-        else
+        else if (_userContext.Role != "Admin")
         {
-            // If no company selected, return nothing to enforce isolation
+            // Only non-admins see nothing if no company
             query = query.Where(t => false);
         }
         
