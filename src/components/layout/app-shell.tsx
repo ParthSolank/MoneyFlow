@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         P
                     </div>
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] whitespace-nowrap">
-                        Design & Dev by <span className="text-indigo-600/50">Parth</span>
+                        Crafted By <span className="text-indigo-600/50">Parth Solanki</span>
                     </span>
                 </div>
             </div>

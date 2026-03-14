@@ -161,8 +161,7 @@ export function AppSidebar({
                 animate={{ opacity: 1, x: 0 }}
                 className="flex flex-col"
               >
-                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Crafted with ❤️</span>
-                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest whitespace-nowrap">By Parth Solanki</span>
+                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest whitespace-nowrap">Crafted By Parth Solanki</span>
               </motion.div>
             )}
           </div>

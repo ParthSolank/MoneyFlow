@@ -184,8 +184,8 @@ function ActivateForm() {
                     <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] text-white font-black shadow-sm">
                         P
                     </div>
-                    <span className="text-[10px] font-black tracking-widest text-indigo-900/40 uppercase whitespace-nowrap">
-                        Design & Dev by Parth
+                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] whitespace-nowrap">
+                        Crafted By <span className="text-indigo-600/50">Parth Solanki</span>
                     </span>
                 </div>
             </div>
