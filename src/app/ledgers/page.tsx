@@ -43,6 +43,7 @@ export default function LedgersPage() {
     name: "",
     description: "",
     balance: "",
+    initialBalance: "",
     icon: "Wallet"
   })
 
@@ -123,6 +124,7 @@ export default function LedgersPage() {
         name: formData.name,
         description: formData.description,
         balance: parseFloat(formData.balance),
+        initialBalance: parseFloat(formData.initialBalance),
         icon: formData.icon,
         accountType: accountType as 'bank' | 'credit'
       };
@@ -155,11 +157,17 @@ export default function LedgersPage() {
 
   const openEdit = (l: Ledger) => {
     setEditingLedger(l)
-    setFormData({ name: l.name, description: l.description || "", balance: (l.balance || 0).toString(), icon: l.icon })
+    setFormData({ 
+      name: l.name, 
+      description: l.description || "", 
+      balance: (l.balance || 0).toString(), 
+      initialBalance: (l.initialBalance || l.balance || 0).toString(),
+      icon: l.icon 
+    })
     setIsEditOpen(true)
   }
 
-  const resetForm = () => setFormData({ name: "", description: "", balance: "", icon: "Wallet" })
+  const resetForm = () => setFormData({ name: "", description: "", balance: "", initialBalance: "", icon: "Wallet" })
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -218,10 +226,7 @@ export default function LedgersPage() {
               ledgers.map((l, index) => {
                 const IconComp = iconMap[l.icon] || Wallet
                 const isCredit = l.icon === 'CreditCard';
-                const ledgerTransactions = l.transactions || [];
-                const displayBalance = (l.balance || 0) + ledgerTransactions.reduce((acc, tx) => {
-                  return tx.type === 'income' ? acc + tx.amount : acc - tx.amount;
-                }, 0);
+                const displayBalance = l.balance || 0;
 
                 return (
                   <motion.div
@@ -275,7 +280,7 @@ export default function LedgersPage() {
                             ₹{displayBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </div>
                           <p className="text-[10px] text-muted-foreground mt-1">
-                            (Includes Initial Balance: ₹{(l.balance || 0).toLocaleString('en-IN')})
+                            (Includes Initial Balance: ₹{(l.initialBalance ?? l.balance ?? 0).toLocaleString('en-IN')})
                           </p>
                         </div>
                       </CardContent>
@@ -375,9 +380,14 @@ export default function LedgersPage() {
                 <Label htmlFor="edit-name">Name</Label>
                 <Input id="edit-name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-balance">Balance (₹)</Label>
+              <div className="grid gap-2 opacity-60">
+                <Label htmlFor="edit-balance">Current Tracking Balance (Auto-calculated)</Label>
                 <Input id="edit-balance" type="number" value={formData.balance} onChange={e => setFormData({ ...formData, balance: e.target.value })} />
+                <p className="text-[10px] text-muted-foreground italic">Note: Editing this will force-override your ledger's real-time balance.</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-initial">Initial (Starting) Balance (₹)</Label>
+                <Input id="edit-initial" type="number" value={formData.initialBalance} onChange={e => setFormData({ ...formData, initialBalance: e.target.value })} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-type">Type</Label>

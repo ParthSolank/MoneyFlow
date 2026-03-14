@@ -2,7 +2,7 @@
 "use client"
 
 import { use, useEffect, useState, useMemo } from "react"
-import { ledgerApi, transactionApi, Ledger } from "@/lib/api-client"
+import { ledgerApi, transactionApi, categoryApi, Ledger, Transaction, Category } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,6 +28,7 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
   const { id } = use(params)
   const [ledger, setLedger] = useState<Ledger | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [categories, setCategories] = useState<Category[]>([])
   const [error, setError] = useState(false)
   const { toast } = useToast()
 
@@ -79,12 +80,27 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
     }
   }
 
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+
   useEffect(() => {
     const fetchLedger = async () => {
       try {
         setIsLoading(true)
         const data = await ledgerApi.getById(Number(id))
         setLedger(data)
+        
+        // If the ledger has transactions included, use them, otherwise fetch separately
+        if (data.transactions && data.transactions.length > 0) {
+          setTransactions(data.transactions)
+        } else {
+          try {
+            const txData = await transactionApi.getByLedgerId(Number(id))
+            setTransactions(txData.items || [])
+          } catch (txErr) {
+            console.error("Failed to fetch transactions separately:", txErr)
+            setTransactions([])
+          }
+        }
       } catch (err) {
         setError(true)
       } finally {
@@ -95,17 +111,20 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
     if (id) {
       fetchLedger()
     }
+    
+    // Fetch all categories
+    const fetchCategories = async () => {
+      try {
+        const data = await categoryApi.getAll()
+        setCategories(data)
+      } catch (err) {
+        console.error("Failed to fetch categories:", err)
+      }
+    }
+    fetchCategories()
   }, [id])
 
-  const ledgerTransactions = useMemo(() => ledger?.transactions || [], [ledger?.transactions]);
-
-  const displayBalance = useMemo(() => {
-    if (!ledger) return 0;
-    return ledger.balance + ledgerTransactions.reduce((acc, tx) => {
-      return tx.type === 'income' ? acc + tx.amount : acc - tx.amount;
-    }, 0);
-  }, [ledger, ledgerTransactions]);
-
+  const ledgerTransactions = transactions;
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -119,6 +138,7 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
   }
 
   const IconComp = iconMap[ledger.icon] || Wallet
+  const displayBalance = ledger.balance;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500 pb-24">
@@ -151,7 +171,7 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
                 {displayBalance < 0 ? 'Outstanding Dues' : 'Available Balance'}
               </span>
               <span className="text-xs text-muted-foreground mt-1">
-                (Includes Initial Balance: ₹{ledger.balance.toLocaleString('en-IN')})
+                (Includes Initial Balance: ₹{(ledger.initialBalance ?? ledger.balance).toLocaleString('en-IN')})
               </span>
             </div>
           </CardContent>
@@ -184,24 +204,36 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
                     <TableCell className="font-medium text-xs">
                       {tx.description}
                     </TableCell>
-                    <TableCell>
+                     <TableCell>
                       <Select value={tx.category} onValueChange={(val) => handleCategoryChange(tx.id, val, tx)}>
-                        <SelectTrigger className="h-7 text-xs w-[130px]">
+                        <SelectTrigger className="h-7 text-[10px] w-[140px] bg-white dark:bg-gray-800 border-indigo-100 dark:border-gray-700">
                           <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="salary">Salary & Income</SelectItem>
-                          <SelectItem value="food">Food & Dining</SelectItem>
-                          <SelectItem value="shopping">Shopping</SelectItem>
-                          <SelectItem value="transport">Transportation</SelectItem>
-                          <SelectItem value="rent">Rent & Housing</SelectItem>
-                          <SelectItem value="utilities">Utilities & Bills</SelectItem>
-                          <SelectItem value="health">Healthcare</SelectItem>
-                          <SelectItem value="entertainment">Entertainment</SelectItem>
-                          <SelectItem value="education">Education</SelectItem>
-                          <SelectItem value="travel">Travel</SelectItem>
-                          <SelectItem value="investment">Investments</SelectItem>
-                          <SelectItem value="misc">Miscellaneous</SelectItem>
+                          <div className="max-h-[300px] overflow-y-auto">
+                            {categories.length > 0 ? (
+                              categories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.name} className="text-xs">
+                                  {cat.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <>
+                                <SelectItem value="salary">Salary & Income</SelectItem>
+                                <SelectItem value="food">Food & Dining</SelectItem>
+                                <SelectItem value="shopping">Shopping</SelectItem>
+                                <SelectItem value="transport">Transportation</SelectItem>
+                                <SelectItem value="rent">Rent & Housing</SelectItem>
+                                <SelectItem value="utilities">Utilities & Bills</SelectItem>
+                                <SelectItem value="health">Healthcare</SelectItem>
+                                <SelectItem value="entertainment">Entertainment</SelectItem>
+                                <SelectItem value="education">Education</SelectItem>
+                                <SelectItem value="travel">Travel</SelectItem>
+                                <SelectItem value="investment">Investments</SelectItem>
+                                <SelectItem value="misc">Miscellaneous</SelectItem>
+                              </>
+                            )}
+                          </div>
                         </SelectContent>
                       </Select>
                     </TableCell>

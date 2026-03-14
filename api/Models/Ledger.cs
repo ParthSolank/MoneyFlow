@@ -22,6 +22,9 @@ public class Ledger
     [Column(TypeName = "decimal(18,2)")]
     public decimal Balance { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal InitialBalance { get; set; }
+
     [Required]
     [MaxLength(100)]
     public string Icon { get; set; } = string.Empty;

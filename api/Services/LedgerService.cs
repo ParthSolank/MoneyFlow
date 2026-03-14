@@ -40,10 +40,20 @@ public class LedgerService
             .ToListAsync();
 
     // Get ledger by ID
-    public async Task<Ledger?> GetByIdAsync(int id) =>
-        await GetBaseQuery()
-            .Include(l => l.Transactions.Where(t => !t.IsDeleted))
-            .FirstOrDefaultAsync(l => l.Id == id);
+    public async Task<Ledger?> GetByIdAsync(int id) {
+        var ledger = await GetBaseQuery().FirstOrDefaultAsync(l => l.Id == id);
+        
+        if (ledger != null) {
+            // Explicitly load transactions to ensure they are fetched correctly
+            // even if global filters are complex
+            ledger.Transactions = await _context.Transactions
+                .Where(t => t.LedgerId == id && !t.IsDeleted)
+                .OrderByDescending(t => t.Date)
+                .ToListAsync();
+        }
+        
+        return ledger;
+    }
 
     // Get ledgers by account type (bank/credit)
     public async Task<List<Ledger>> GetByAccountTypeAsync(string accountType) =>
@@ -58,6 +68,7 @@ public class LedgerService
         ledger.CreatedAt = DateTime.UtcNow;
         ledger.UpdatedAt = DateTime.UtcNow;
         ledger.CompanyId = _userContext.CompanyId;
+        ledger.InitialBalance = ledger.Balance; // Set initial balance to current balance on creation
         
         _context.Ledgers.Add(ledger);
         await _context.SaveChangesAsync();
@@ -79,6 +90,7 @@ public class LedgerService
         existing.Name = updatedLedger.Name;
         existing.Description = updatedLedger.Description;
         existing.Balance = updatedLedger.Balance;
+        existing.InitialBalance = updatedLedger.InitialBalance;
         existing.Icon = updatedLedger.Icon;
         existing.AccountType = updatedLedger.AccountType;
         existing.UpdatedAt = DateTime.UtcNow;

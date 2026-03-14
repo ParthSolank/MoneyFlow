@@ -146,7 +146,9 @@ public class TransactionService
         if (!apply) adjustment = -adjustment;
 
         // Perform atomic update in database to prevent race conditions
+        // We use IgnoreQueryFilters here to ensure the update hits even if the context is broad
         await _context.Ledgers
+            .IgnoreQueryFilters()
             .Where(l => l.Id == ledgerId.Value)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(l => l.Balance, l => l.Balance + adjustment)

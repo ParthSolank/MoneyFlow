@@ -25,6 +25,7 @@ export interface Ledger {
     name: string;
     description: string;
     balance: number;
+    initialBalance?: number;
     icon: string;
     accountType: 'bank' | 'credit';
     createdAt?: string;
@@ -157,6 +158,11 @@ export const transactionApi = {
     // Get all categories
     getCategories: async (): Promise<string[]> => {
         return api.get('/transactions/categories');
+    },
+
+    // Get transactions by ledger ID
+    getByLedgerId: async (ledgerId: number, page: number = 1, pageSize: number = 50): Promise<{ items: Transaction[], totalCount: number }> => {
+        return api.get(`/transactions/ledger/${ledgerId}?page=${page}&pageSize=${pageSize}`);
     },
 
     // Get transactions by date range
