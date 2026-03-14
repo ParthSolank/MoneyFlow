@@ -36,4 +36,7 @@ public class User
 
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAt { get; set; }
+
+    public bool IsActive { get; set; } = false;
+    public string? ActivationKey { get; set; }
 }

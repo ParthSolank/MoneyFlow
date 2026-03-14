@@ -48,3 +48,13 @@ public class RefreshTokenRequest
     public string? Token { get; set; }
     public string? RefreshToken { get; set; }
 }
+
+public class ActivateRequest
+{
+    [Required]
+    [EmailAddress]
+    public required string Email { get; set; }
+
+    [Required]
+    public required string ActivationKey { get; set; }
+}

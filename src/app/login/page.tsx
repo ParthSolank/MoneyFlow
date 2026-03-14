@@ -111,17 +111,6 @@ export default function LoginPage() {
             </motion.div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <motion.div variants={itemVariants} className="mb-4 p-4 bg-indigo-50/50 text-indigo-700 text-sm rounded-xl border border-indigo-100 shadow-sm">
-              <p className="font-semibold mb-1 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                Demo Credentials:
-              </p>
-              <div className="pl-4 space-y-1 text-indigo-600/80">
-                <p>Email: <span className="font-mono text-indigo-700">admin@demo.com</span></p>
-                <p>Password: <span className="font-mono text-indigo-700">password123</span></p>
-              </div>
-            </motion.div>
-
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <motion.div variants={itemVariants} className="space-y-4">

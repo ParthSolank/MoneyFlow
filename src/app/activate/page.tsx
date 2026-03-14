@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,64 +14,52 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import { Wallet, ArrowRight, Loader2 } from "lucide-react";
-import { useAuth } from "@/context/auth-context";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ShieldCheck, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const registerSchema = z.object({
-    username: z.string().min(3, { message: "Username must be at least 3 characters" }),
+const activateSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-    confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
+    activationKey: z.string().length(6, { message: "Activation key must be exactly 6 characters" }),
 });
 
-export default function RegisterPage() {
+function ActivateForm() {
     const { toast } = useToast();
-    const { register } = useAuth();
-    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const [isLoading, setIsLoading] = useState(false);
 
-    const form = useForm<z.infer<typeof registerSchema>>({
-        resolver: zodResolver(registerSchema),
+    const defaultEmail = searchParams.get("email") || "";
+
+    const form = useForm<z.infer<typeof activateSchema>>({
+        resolver: zodResolver(activateSchema),
         defaultValues: {
-            username: "",
-            email: "",
-            password: "",
-            confirmPassword: "",
+            email: defaultEmail,
+            activationKey: "",
         },
     });
 
-    async function onSubmit(values: z.infer<typeof registerSchema>) {
+    async function onSubmit(values: z.infer<typeof activateSchema>) {
         setIsLoading(true);
         try {
-            await api.post<any>("/auth/register", {
-                username: values.username,
-                email: values.email,
-                password: values.password,
-            });
+            await api.post<{ message: string }>("/auth/activate", values);
 
             toast({
-                title: "Account Created! 📧",
-                description: "Please check your email for the activation key.",
-                className: "bg-indigo-50 border-indigo-200 text-indigo-900",
+                title: "Account Activated! 🚀",
+                description: "You can now log in securely.",
+                className: "bg-green-50 border-green-200 text-green-900",
             });
 
-            // Redirect to activation page with email pre-filled in query
-            router.push(`/activate?email=${encodeURIComponent(values.email)}`);
+            router.push("/login");
 
         } catch (error: any) {
             toast({
                 variant: "destructive",
-                title: "Registration failed",
-                description: error.message,
+                title: "Activation failed",
+                description: error.message || "Invalid activation key.",
             });
         } finally {
             setIsLoading(false);
@@ -83,10 +71,7 @@ export default function RegisterPage() {
         visible: {
             opacity: 1,
             scale: 1,
-            transition: {
-                duration: 0.5,
-                staggerChildren: 0.1
-            }
+            transition: { duration: 0.5, staggerChildren: 0.1 }
         },
         exit: { opacity: 0, scale: 0.9, transition: { duration: 0.3 } }
     };
@@ -115,14 +100,14 @@ export default function RegisterPage() {
                             transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
                             className="bg-gradient-to-br from-indigo-500 to-purple-600 w-16 h-16 mx-auto p-3.5 rounded-2xl shadow-lg mb-4 flex items-center justify-center"
                         >
-                            <Wallet className="w-full h-full text-white" />
+                            <ShieldCheck className="w-full h-full text-white" />
                         </motion.div>
                         <motion.div variants={itemVariants}>
                             <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">
-                                Create Account
+                                Account Activation
                             </CardTitle>
                             <CardDescription className="text-base text-gray-500 mt-2">
-                                Start managing your finances effectively
+                                Please enter the 6-digit key sent to your email.
                             </CardDescription>
                         </motion.div>
                     </CardHeader>
@@ -132,31 +117,16 @@ export default function RegisterPage() {
                                 <motion.div variants={itemVariants} className="space-y-4">
                                     <FormField
                                         control={form.control}
-                                        name="username"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-gray-700 font-medium">Username</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="johndoe"
-                                                        className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all duration-200"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
                                         name="email"
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel className="text-gray-700 font-medium">Email</FormLabel>
                                                 <FormControl>
                                                     <Input
+                                                        type="email"
                                                         placeholder="name@example.com"
                                                         className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all duration-200"
+                                                        disabled={!!defaultEmail}
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -164,35 +134,18 @@ export default function RegisterPage() {
                                             </FormItem>
                                         )}
                                     />
+
                                     <FormField
                                         control={form.control}
-                                        name="password"
+                                        name="activationKey"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
+                                                <FormLabel className="text-gray-700 font-medium">Activation Key</FormLabel>
                                                 <FormControl>
                                                     <Input
-                                                        type="password"
-                                                        placeholder="••••••••"
-                                                        className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all duration-200"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="confirmPassword"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-gray-700 font-medium">Confirm Password</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="password"
-                                                        placeholder="••••••••"
-                                                        className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all duration-200"
+                                                        placeholder="123456"
+                                                        className="h-11 font-mono tracking-[0.5em] text-center text-xl bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all duration-200"
+                                                        maxLength={6}
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -205,33 +158,23 @@ export default function RegisterPage() {
                                 <motion.div variants={itemVariants} className="pt-2">
                                     <Button
                                         type="submit"
-                                        className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 text-base font-medium"
                                         disabled={isLoading}
+                                        className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium text-base shadow-md hover:shadow-lg transition-all duration-200"
                                     >
                                         {isLoading ? (
-                                            <span className="flex items-center gap-2">
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                                Creating account...
-                                            </span>
+                                            <>
+                                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                                Activating...
+                                            </>
                                         ) : (
-                                            <span className="flex items-center gap-2">
-                                                Create account
-                                                <ArrowRight className="w-4 h-4 ml-1" />
-                                            </span>
+                                            "Activate Account"
                                         )}
                                     </Button>
                                 </motion.div>
                             </form>
                         </Form>
                     </CardContent>
-                    <CardFooter className="pb-8">
-                        <motion.p variants={itemVariants} className="text-sm text-center w-full text-gray-500">
-                            Already have an account?{" "}
-                            <Link href="/login" className="text-indigo-600 hover:text-indigo-700 hover:underline font-semibold transition-colors">
-                                Sign in
-                            </Link>
-                        </motion.p>
-                    </CardFooter>
+                    
                 </Card>
             </motion.div>
 
@@ -241,11 +184,19 @@ export default function RegisterPage() {
                     <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] text-white font-black shadow-sm">
                         P
                     </div>
-                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] whitespace-nowrap">
-                        Design & Dev by <span className="text-indigo-600/50">Parth</span>
+                    <span className="text-[10px] font-black tracking-widest text-indigo-900/40 uppercase whitespace-nowrap">
+                        Design & Dev by Parth
                     </span>
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ActivatePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>}>
+            <ActivateForm />
+        </Suspense>
     );
 }

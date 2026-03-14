@@ -18,12 +18,11 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
+    public async Task<ActionResult<object>> Register(RegisterRequest request)
     {
         try
         {
             var response = await _authService.RegisterAsync(request);
-            SetRefreshTokenCookie(response.RefreshToken);
             return Ok(response);
         }
         catch (ArgumentException ex)
@@ -33,6 +32,24 @@ public class AuthController : ControllerBase
         catch (Exception)
         {
             return StatusCode(500, new { message = "An error occurred during registration." });
+        }
+    }
+
+    [HttpPost("activate")]
+    public async Task<IActionResult> Activate(ActivateRequest request)
+    {
+        try
+        {
+            await _authService.ActivateAccountAsync(request);
+            return Ok(new { message = "Account successfully activated! You can now log in." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new { message = "An error occurred during activation." });
         }
     }
 

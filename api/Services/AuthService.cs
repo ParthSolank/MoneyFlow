@@ -2,6 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Net;
+using System.Net.Mail;
 using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -22,7 +24,7 @@ public class AuthService : IAuthService
         _configuration = configuration;
     }
 
-    public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+    public async Task<object> RegisterAsync(RegisterRequest request)
     {
         if (await _context.Users.AnyAsync(u => u.Email == request.Email || u.Username == request.Username))
         {
@@ -31,12 +33,16 @@ public class AuthService : IAuthService
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
+        var activationKey = GenerateActivationKey();
+
         var newUser = new User
         {
             Username = request.Username,
             Email = request.Email,
             PasswordHash = passwordHash,
             Role = "User", // HARDCODED DEFAULT
+            IsActive = false,
+            ActivationKey = activationKey,
             Rights = new List<string> 
             { 
                 "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE",
@@ -48,8 +54,85 @@ public class AuthService : IAuthService
 
         _context.Users.Add(newUser);
         await _context.SaveChangesAsync();
+        
+        // Log to console for easy local testing when SMTP is not configured
+        Console.WriteLine($"\n[MoneyFlow Security] -> Activation Key for {request.Email} is: {activationKey}\n");
 
-        return await GenerateAuthResponseAsync(newUser);
+        _ = SendActivationEmailAsync(request.Email, activationKey);
+
+        return new { message = "Registration successful. Please check your email to activate your account.", email = request.Email };
+    }
+
+    private string GenerateActivationKey()
+    {
+        return new Random().Next(100000, 999999).ToString();
+    }
+
+    private async Task SendActivationEmailAsync(string toEmail, string activationKey)
+    {
+        try
+        {
+            using var client = new SmtpClient("smtp.gmail.com", 587);
+            client.EnableSsl = true;
+            client.UseDefaultCredentials = false;
+            
+            var senderEmail = "solankiparth2126@gmail.com";
+            // Get password from appsettings.json or Environment Variables
+            var senderPassword = _configuration["EmailSettings:Password"]; 
+            
+            if (string.IsNullOrEmpty(senderPassword))
+            {
+                Console.WriteLine("SMTP Password is not configured in appsettings.json under 'EmailSettings:Password'. Email cannot be sent.");
+                return;
+            }
+
+            client.Credentials = new NetworkCredential(senderEmail, senderPassword);
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(senderEmail, "MoneyFlow Pro Admin"),
+                Subject = "Activate your Account - MoneyFlow Pro",
+                Body = $@"
+                    <h2>Welcome to MoneyFlow Pro!</h2>
+                    <p>Thank you for registering. To activate your account and start managing your finances, please use the following 6-digit activation key:</p>
+                    <h1 style='color: #4f46e5; letter-spacing: 5px;'>{activationKey}</h1>
+                    <p>Enter this key on the activation page to continue.</p>
+                ",
+                IsBodyHtml = true
+            };
+            mailMessage.To.Add(toEmail);
+
+            await client.SendMailAsync(mailMessage);
+            Console.WriteLine($"Sent activation email to {toEmail} successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to send activation email: {ex.Message}");
+        }
+    }
+
+    public async Task<bool> ActivateAccountAsync(ActivateRequest request)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
+        
+        if (user == null)
+            throw new ArgumentException("User not found.");
+            
+        if (user.IsActive)
+            throw new ArgumentException("Account is already active.");
+
+        if (user.ActivationKey != request.ActivationKey)
+            throw new ArgumentException("Invalid activation key.");
+
+        // Activate
+        user.IsActive = true;
+        user.ActivationKey = null; // Clear the key once used
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+
+        return true;
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -59,6 +142,11 @@ public class AuthService : IAuthService
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             throw new UnauthorizedAccessException("Invalid email or password.");
+        }
+
+        if (!user.IsActive)
+        {
+            throw new UnauthorizedAccessException("Account not activated. Please verify your email first.");
         }
 
         return await GenerateAuthResponseAsync(user);

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MoneyFlowApi.Data;
 
@@ -11,9 +12,11 @@ using MoneyFlowApi.Data;
 namespace MoneyFlowApi.Data.Migrations
 {
     [DbContext(typeof(MoneyFlowDbContext))]
-    partial class MoneyFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260314052302_AddActivationFlow")]
+    partial class AddActivationFlow
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
