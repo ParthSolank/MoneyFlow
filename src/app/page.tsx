@@ -140,8 +140,8 @@ export default function Dashboard() {
 
       <CashFlowCalendar />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <div className="lg:col-span-4 h-full">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 2xl:grid-cols-12">
+        <div className="lg:col-span-4 2xl:col-span-8 h-full">
           <Card className="h-full border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -211,7 +211,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="lg:col-span-3 h-full">
+        <div className="lg:col-span-3 2xl:col-span-4 h-full">
           <Card className="h-full border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -288,8 +288,8 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">No budgets set for this month. <a href="/budgets" className="text-indigo-600 font-bold">Plan Now</a></p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {budgetStats.slice(0, 4).map((stat) => (
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-4 3xl:grid-cols-6 gap-6">
+                {budgetStats.slice(0, 6).map((stat) => (
                   <div key={stat.id} className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-semibold text-gray-700 dark:text-gray-300">{stat.categoryName}</span>

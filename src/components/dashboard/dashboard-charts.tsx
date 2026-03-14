@@ -96,8 +96,8 @@ export function DashboardCharts({ startDate, endDate }: DashboardChartsProps) {
     const isLoading = txLoading || trendsLoading || breakdownLoading || distLoading;
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-12">
-            <Card className="lg:col-span-12 xl:col-span-5 border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-12 2xl:grid-cols-16">
+            <Card className="lg:col-span-12 xl:col-span-5 2xl:col-span-6 border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div className="space-y-1">
                         <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -204,11 +204,11 @@ export function DashboardCharts({ startDate, endDate }: DashboardChartsProps) {
                 </CardContent>
             </Card>
 
-            <div className="lg:col-span-12 xl:col-span-3 h-full">
+            <div className="lg:col-span-12 xl:col-span-3 2xl:col-span-4 h-full">
                 <SpendingHeatmap transactions={transactions} isLoading={txLoading} />
             </div>
 
-            <Card className="lg:col-span-12 xl:col-span-4 border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800">
+            <Card className="lg:col-span-12 xl:col-span-4 2xl:col-span-6 border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg font-bold flex items-center gap-2">
                         {breakdownMode === "expense" ? <PieIcon className="h-4 w-4 text-purple-500" /> : <Wallet className="h-4 w-4 text-emerald-500" />}
