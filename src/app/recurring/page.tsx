@@ -210,9 +210,17 @@ export default function RecurringPage() {
                     <div className="col-span-full border-2 border-dashed border-indigo-100 rounded-[2.5rem] py-24 text-center bg-white/40 backdrop-blur-md">
                         <Activity className="h-16 w-16 text-indigo-200 mx-auto mb-6" />
                         <h3 className="text-2xl font-bold text-gray-700">No automated transactions yet</h3>
-                        <p className="text-gray-400 mt-2 max-w-md mx-auto">
+                        <p className="text-gray-400 mt-2 max-w-md mx-auto mb-8">
                             Setup recurring transactions for your subscriptions or salary to keep your ledger up to date automatically.
                         </p>
+                        {canCreate("CORE", "RECURRING") && (
+                            <Button 
+                                onClick={() => setIsDialogOpen(true)}
+                                className="bg-indigo-600 hover:bg-indigo-700 h-12 px-8 rounded-xl shadow-lg shadow-indigo-200"
+                            >
+                                <Plus className="mr-2 h-5 w-5" /> Schedule Your First Automation
+                            </Button>
+                        )}
                     </div>
                 ) : (
                     <AnimatePresence>
