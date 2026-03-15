@@ -155,11 +155,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
-
+// if (!app.Environment.IsDevelopment())
+// {
+    
+// }
+app.UseHttpsRedirection();
 // Global Exception Handler
 app.UseMiddleware<MoneyFlowApi.Middleware.GlobalExceptionHandlerMiddleware>();
 
@@ -197,8 +197,8 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<MoneyFlowDbContext>();
         
         // Ensure database is created and all migrations are applied
-        // Moving this to manual process to avoid 500.30 startup errors on some hosts
-        // context.Database.Migrate(); 
+        // This is better for production than EnsureCreated() as it supports schema evolution
+        context.Database.Migrate(); 
 
 
         if (!context.Users.Any())

@@ -1,4 +1,4 @@
-export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5039';
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://moneyflowapi.runasp.net';
 export const API_BASE_URL = `${BASE_URL}/api`;
 
 interface RequestOptions extends RequestInit {
@@ -14,7 +14,6 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
 
     const headers = {
         'Content-Type': 'application/json',
-        'Bypass-Tunnel-Reminder': 'true',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...(companyId && { 'X-Company-Id': companyId }),
         ...options.headers,
