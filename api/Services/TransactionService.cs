@@ -139,8 +139,8 @@ public class TransactionService
 
         return await GetBaseQuery()
             .Include(t => t.Ledger)
-            .Where(t => string.CompareTo(t.Date, startDate) >= 0 &&
-                       string.CompareTo(t.Date, endDate) <= 0)
+            .Where(t => string.Compare(t.Date, startDate) >= 0 &&
+                       string.Compare(t.Date, endDate) <= 0)
             .OrderByDescending(t => t.Date)
             .ToListAsync();
     }
