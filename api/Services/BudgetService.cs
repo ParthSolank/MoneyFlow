@@ -112,14 +112,23 @@ public class BudgetService
             .Select(g => new { CategoryName = g.Key, Spent = g.Sum(t => t.Amount) })
             .ToListAsync();
 
-        var status = budgets.Select(b => new
+        // Use dictionary lookup to avoid O(n²) complexity
+        var expenseDict = expenses.ToDictionary(e => e.CategoryName, e => e.Spent);
+
+        var status = budgets.Select(b =>
         {
-            b.Id,
-            CategoryName = b.Category?.Name ?? "Unknown",
-            b.Amount,
-            Spent = expenses.FirstOrDefault(e => e.CategoryName == b.Category?.Name)?.Spent ?? 0,
-            Remaining = b.Amount - (expenses.FirstOrDefault(e => e.CategoryName == b.Category?.Name)?.Spent ?? 0),
-            PercentUsed = b.Amount > 0 ? (expenses.FirstOrDefault(e => e.CategoryName == b.Category?.Name)?.Spent ?? 0) / b.Amount * 100 : 0
+            var categoryName = b.Category?.Name ?? "Unknown";
+            var spent = expenseDict.ContainsKey(categoryName) ? expenseDict[categoryName] : 0;
+
+            return new
+            {
+                b.Id,
+                CategoryName = categoryName,
+                b.Amount,
+                Spent = spent,
+                Remaining = b.Amount - spent,
+                PercentUsed = b.Amount > 0 ? (spent / b.Amount * 100) : 0
+            };
         }).ToList();
 
         return status;

@@ -129,13 +129,21 @@ public class TransactionService
             .ToListAsync();
 
     // Get transactions by date range
-    public async Task<List<Transaction>> GetByDateRangeAsync(string startDate, string endDate) =>
-        await GetBaseQuery()
+    public async Task<List<Transaction>> GetByDateRangeAsync(string startDate, string endDate)
+    {
+        // Validate date format
+        if (!DateTime.TryParseExact(startDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out _))
+            throw new ArgumentException($"Invalid start date format: {startDate}. Use yyyy-MM-dd");
+        if (!DateTime.TryParseExact(endDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out _))
+            throw new ArgumentException($"Invalid end date format: {endDate}. Use yyyy-MM-dd");
+
+        return await GetBaseQuery()
             .Include(t => t.Ledger)
-            .Where(t => string.Compare(t.Date, startDate) >= 0 && 
-                       string.Compare(t.Date, endDate) <= 0)
+            .Where(t => string.CompareTo(t.Date, startDate) >= 0 &&
+                       string.CompareTo(t.Date, endDate) <= 0)
             .OrderByDescending(t => t.Date)
             .ToListAsync();
+    }
 
     private async Task UpdateLedgerBalanceAsync(int? ledgerId, decimal amount, string type, bool apply)
     {

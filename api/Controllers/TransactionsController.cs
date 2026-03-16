@@ -29,6 +29,12 @@ public class TransactionsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResult<Transaction>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        // Validate pagination input
+        if (page < 1)
+            return BadRequest(new { message = "Page must be >= 1" });
+        if (pageSize < 1 || pageSize > 100)
+            return BadRequest(new { message = "PageSize must be between 1 and 100" });
+
         var result = await _transactionService.GetAllAsync(page, pageSize);
         return Ok(result);
     }
@@ -40,7 +46,11 @@ public class TransactionsController : ControllerBase
     {
         var transaction = await _transactionService.GetByIdAsync(id);
         if (transaction == null)
+        {
+            await _auditLogService.LogAsync("ACCESS_DENIED", "Transactions",
+                $"Attempted access to non-existent transaction ID {id}");
             return NotFound(new { message = $"Transaction with ID {id} not found" });
+        }
 
         return Ok(transaction);
     }
@@ -50,6 +60,12 @@ public class TransactionsController : ControllerBase
     [HttpGet("ledger/{ledgerId:int}")]
     public async Task<ActionResult<PagedResult<Transaction>>> GetByLedgerId(int ledgerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        // Validate pagination input
+        if (page < 1)
+            return BadRequest(new { message = "Page must be >= 1" });
+        if (pageSize < 1 || pageSize > 100)
+            return BadRequest(new { message = "PageSize must be between 1 and 100" });
+
         var result = await _transactionService.GetByLedgerIdAsync(ledgerId, page, pageSize);
         return Ok(result);
     }
@@ -199,14 +215,24 @@ public class TransactionsController : ControllerBase
     [AuthorizeRight("CORE_TRANSACTIONS_CREATE")]
     public async Task<IActionResult> ImportCsv(IFormFile file, [FromForm] int? ledgerId)
     {
-        if (file == null || file.Length == 0) return BadRequest("File is empty.");
+        // Validate file
+        const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "File is empty." });
+        if (file.Length > MaxFileSize)
+            return BadRequest(new { message = $"File size exceeds maximum allowed ({MaxFileSize / 1024 / 1024}MB)." });
+
+        // Validate MIME type and extension
+        var extension = Path.GetExtension(file.FileName).ToLower();
+        var allowedExtensions = new[] { ".csv", ".xlsx" };
+        if (!allowedExtensions.Contains(extension))
+            return BadRequest(new { message = "Invalid file type. Allowed: CSV (.csv), Excel (.xlsx)" });
 
         try
         {
-            var extension = Path.GetExtension(file.FileName).ToLower();
             using var memStream = new MemoryStream();
             await file.CopyToAsync(memStream);
-            
+
             var count = await _transactionService.ImportFromStreamAsync(memStream, extension, ledgerId);
 
             await _auditLogService.LogAsync("IMPORT", "Transactions", $"Imported {count} transactions via File.");
@@ -214,7 +240,7 @@ public class TransactionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest($"Failed to import file: {ex.Message}");
+            return BadRequest(new { message = $"Failed to import file: {ex.Message}" });
         }
     }
 

@@ -121,6 +121,8 @@ public class CategoryService
             ("Other", "expense", "MoreHorizontal", "#94a3b8", "emergency,gift,family", new[] { "Family", "Gifts", "Emergency" })
         };
 
+        var allCategories = new List<Category>();
+
         foreach (var cat in categories)
         {
             var parent = new Category
@@ -135,24 +137,39 @@ public class CategoryService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.Categories.Add(parent);
-            await _context.SaveChangesAsync();
+            allCategories.Add(parent);
 
-            foreach (var subName in cat.Subs)
+            // Add parent first so we get the ID for subcategories
+            _context.Categories.Add(parent);
+        }
+
+        // Save all parents first
+        await _context.SaveChangesAsync();
+
+        // Now add all subcategories
+        foreach (var cat in categories)
+        {
+            var parent = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Name == cat.Name && c.CompanyId == targetCompanyId && c.ParentId == null);
+
+            if (parent != null)
             {
-                var sub = new Category
+                foreach (var subName in cat.Subs)
                 {
-                    Name = subName,
-                    Type = cat.Type,
-                    Icon = cat.Icon,
-                    Color = cat.Color,
-                    Keywords = subName.ToLower(),
-                    ParentId = parent.Id,
-                    CompanyId = targetCompanyId,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                _context.Categories.Add(sub);
+                    var sub = new Category
+                    {
+                        Name = subName,
+                        Type = cat.Type,
+                        Icon = cat.Icon,
+                        Color = cat.Color,
+                        Keywords = subName.ToLower(),
+                        ParentId = parent.Id,
+                        CompanyId = targetCompanyId,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Categories.Add(sub);
+                }
             }
         }
 

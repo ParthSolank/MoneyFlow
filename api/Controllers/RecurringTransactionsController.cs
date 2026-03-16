@@ -91,11 +91,50 @@ public class RecurringTransactionsController : ControllerBase
         var rt = await _context.RecurringTransactions.FindAsync(id);
         if (rt == null) return NotFound();
 
-        rt.IsDeleted = true;
-        rt.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // Find all transactions created by this recurring rule that haven't been manually deleted
+            var createdTransactions = await _context.Transactions
+                .Where(t => t.Description.Contains(rt.Description) &&
+                           t.CompanyId == rt.CompanyId &&
+                           t.LedgerId == rt.LedgerId &&
+                           t.Amount == rt.Amount &&
+                           !t.IsDeleted)
+                .ToListAsync();
 
-        await _auditLogService.LogAsync("DELETE", "Recurring", $"Stopped/Deleted recurring ID {id}");
-        return NoContent();
+            // Reverse each transaction on the ledger
+            foreach (var txn in createdTransactions)
+            {
+                // Soft delete the transaction
+                txn.IsDeleted = true;
+                _context.Transactions.Update(txn);
+
+                // Reverse the ledger balance impact
+                decimal reversal = txn.Type == "income" ? -txn.Amount : txn.Amount;
+                await _context.Ledgers
+                    .Where(l => l.Id == txn.LedgerId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(l => l.Balance, l => l.Balance + reversal)
+                        .SetProperty(l => l.UpdatedAt, DateTime.UtcNow));
+            }
+
+            // Mark recurring transaction as deleted
+            rt.IsDeleted = true;
+            rt.UpdatedAt = DateTime.UtcNow;
+            _context.RecurringTransactions.Update(rt);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            await _auditLogService.LogAsync("DELETE", "Recurring",
+                $"Stopped/Deleted recurring ID {id} and reversed {createdTransactions.Count} created transactions");
+            return NoContent();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }

@@ -70,27 +70,39 @@ public class AuthService : IAuthService
 
     private string GenerateActivationKey()
     {
-        return new Random().Next(100000, 999999).ToString();
+        // Generate 8-character alphanumeric code (62^8 = 218 trillion combinations, much stronger than 6-digit)
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        using var rng = RandomNumberGenerator.Create();
+        byte[] data = new byte[8];
+        rng.GetBytes(data);
+
+        var result = new StringBuilder(8);
+        foreach (byte b in data)
+        {
+            result.Append(chars[b % chars.Length]);
+        }
+        return result.ToString();
     }
 
     private async Task SendActivationEmailAsync(string toEmail, string activationKey)
     {
         try
         {
-            using var client = new SmtpClient("smtp.gmail.com", 587);
-            client.EnableSsl = true;
-            client.UseDefaultCredentials = false;
-            
-            var senderEmail = "solankiparth2126@gmail.com";
-            // Get password from appsettings.json or Environment Variables
-            var senderPassword = _configuration["EmailSettings:Password"]; 
-            
-            if (string.IsNullOrEmpty(senderPassword))
+            // Get configuration from appsettings.json
+            var senderEmail = _configuration["EmailSettings:SenderEmail"];
+            var senderPassword = _configuration["EmailSettings:Password"];
+            var smtpServer = _configuration["EmailSettings:SmtpServer"] ?? "smtp.gmail.com";
+            var smtpPort = int.TryParse(_configuration["EmailSettings:SmtpPort"], out int port) ? port : 587;
+
+            if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(senderPassword))
             {
-                Console.WriteLine("SMTP Password is not configured in appsettings.json under 'EmailSettings:Password'. Email cannot be sent.");
+                Console.WriteLine("Email settings not configured in appsettings.json under 'EmailSettings'. Email cannot be sent.");
                 return;
             }
 
+            using var client = new SmtpClient(smtpServer, smtpPort);
+            client.EnableSsl = true;
+            client.UseDefaultCredentials = false;
             client.Credentials = new NetworkCredential(senderEmail, senderPassword);
 
             var mailMessage = new MailMessage

@@ -21,12 +21,14 @@ public class GoalsController : ControllerBase
     }
 
     [HttpGet]
+    [AuthorizeRight("view_goals")]
     public async Task<ActionResult<List<Goal>>> GetAll()
     {
         return Ok(await _goalService.GetAllAsync());
     }
 
     [HttpGet("{id:int}")]
+    [AuthorizeRight("view_goals")]
     public async Task<ActionResult<Goal>> GetById(int id)
     {
         var goal = await _goalService.GetByIdAsync(id);
@@ -37,14 +39,23 @@ public class GoalsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Goal>> Create(Goal goal)
     {
+        // Validate deadline is in the future
+        if (goal.Deadline.HasValue && goal.Deadline.Value <= DateTime.UtcNow)
+            return BadRequest(new { message = "Deadline must be in the future" });
+
         var created = await _goalService.CreateAsync(goal);
         await _auditLogService.LogAsync("CREATE", "Goals", $"Created saving goal: {created.Title}");
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizeRight("edit_goals")]
     public async Task<IActionResult> Update(int id, Goal goal)
     {
+        // Validate deadline is in the future
+        if (goal.Deadline.HasValue && goal.Deadline.Value <= DateTime.UtcNow)
+            return BadRequest(new { message = "Deadline must be in the future" });
+
         var updated = await _goalService.UpdateAsync(id, goal);
         if (!updated) return NotFound();
         await _auditLogService.LogAsync("UPDATE", "Goals", $"Updated saving goal ID {id}");
@@ -52,6 +63,7 @@ public class GoalsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizeRight("delete_goals")]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _goalService.DeleteAsync(id);
