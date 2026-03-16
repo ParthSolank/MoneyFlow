@@ -44,7 +44,11 @@ export default function Dashboard() {
     if (!user || !mounted) return;
 
     if (canView("ADMIN", "USER_MANAGEMENT")) {
-      userApi.getAll().then(data => setUsersCount(data.length)).catch(console.error);
+      userApi.getAll()
+        .then(data => setUsersCount(data.length))
+        .catch(error => {
+          console.error('Failed to load users:', error);
+        });
     }
 
     // Fetch budgets for current month
@@ -52,7 +56,10 @@ export default function Dashboard() {
     setLoadingBudgets(true);
     budgetApi.getStatus(now.getMonth() + 1, now.getFullYear())
       .then(data => setBudgetStats(data))
-      .catch(console.error)
+      .catch(error => {
+        console.error('Failed to load budget stats:', error);
+        setBudgetStats([]);
+      })
       .finally(() => setLoadingBudgets(false));
   }, [user?.id, mounted, canView]); // Keep canView but it's now stable
 

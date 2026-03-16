@@ -178,10 +178,13 @@ public class TransactionService
         using var dbTransaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // Validation: Check balance if expense (non-atomic check, but within transaction)
+            // Validation: Check balance if expense using locked query to prevent race condition
             if (transaction.Type == "expense" && transaction.LedgerId.HasValue)
             {
-                var ledger = await _context.Ledgers.FindAsync(transaction.LedgerId.Value);
+                var ledger = await _context.Ledgers
+                    .FromSqlInterpolated($"SELECT * FROM Ledgers WITH (UPDLOCK, READCOMMITTED) WHERE Id = {transaction.LedgerId.Value}")
+                    .FirstOrDefaultAsync();
+
                 if (ledger != null && ledger.AccountType != "credit" && ledger.Balance < transaction.Amount)
                 {
                     throw new InvalidOperationException($"Insufficient balance in Ledger '{ledger.Name}'.");
@@ -190,7 +193,7 @@ public class TransactionService
 
             _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
-            
+
             await UpdateLedgerBalanceAsync(transaction.LedgerId, transaction.Amount, transaction.Type, true);
 
             await _auditLog.LogAsync("Create", "Transaction", $"Created {transaction.Type} of {transaction.Amount}. ID: {transaction.Id}");

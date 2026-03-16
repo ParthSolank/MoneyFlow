@@ -65,6 +65,7 @@ public class CategoriesController : ControllerBase
         return NoContent();
     }
 
+    [AuthorizeRight("CORE_CATEGORIES_CREATE")]
     [HttpPost("seed")]
     public async Task<IActionResult> Seed()
     {

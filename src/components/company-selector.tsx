@@ -21,16 +21,18 @@ export function CompanySelector() {
 
     const fetchCompanies = async () => {
         try {
-            setIsLoading(true);
+            console.log("[CompanySelector] Fetching companies...");
             const data = await companyApi.getAll();
+            console.log("[CompanySelector] Companies found:", data);
             setCompanies(data);
 
             // If only one company exists and none selected, auto-select it
             if (data.length === 1 && !companyId) {
+                console.log("[CompanySelector] Auto-selecting only available company:", data[0]);
                 setCompanyId(data[0].id!);
             }
         } catch (error) {
-            console.error("Failed to fetch companies", error);
+            console.error("[CompanySelector] Failed to fetch companies", error);
         } finally {
             setIsLoading(false);
         }
@@ -169,7 +171,10 @@ export function CompanySelector() {
                                                     <Building2 className="h-6 w-6" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-gray-900 group-hover:text-indigo-700 transition-colors uppercase tracking-tight">{company.name}</h3>
+                                                    <div className="flex items-baseline gap-2">
+                                                        <h3 className="font-bold text-gray-900 group-hover:text-indigo-700 transition-colors uppercase tracking-tight">{company.name}</h3>
+                                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">ID: {company.id}</span>
+                                                    </div>
                                                     {company.gstNumber && <p className="text-xs text-muted-foreground font-mono mt-0.5">GST: {company.gstNumber}</p>}
                                                 </div>
                                             </div>

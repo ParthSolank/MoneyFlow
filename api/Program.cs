@@ -84,21 +84,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowNextJs", policy =>
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.SetIsOriginAllowed(_ => true)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
-        }
-        else
-        {
-            var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? "https://money-flow-main.vercel.app";
-            policy.WithOrigins(frontendUrl)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
-        }
+        var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? (builder.Environment.IsDevelopment() ? "http://localhost:3000" : "https://moneyflow-live.vercel.app");
+        var origins = frontendUrl.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+        policy.WithOrigins(origins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -155,11 +147,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// if (!app.Environment.IsDevelopment())
-// {
-    
-// }
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 // Global Exception Handler
 app.UseMiddleware<MoneyFlowApi.Middleware.GlobalExceptionHandlerMiddleware>();
 
@@ -201,32 +193,10 @@ using (var scope = app.Services.CreateScope())
         context.Database.Migrate(); 
 
 
-        if (!context.Users.Any())
-        {
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword("password123");
-            context.Users.Add(new User
-            {
-                Username = "admin",
-                Email = "admin@demo.com",
-                PasswordHash = passwordHash,
-                Role = "Admin",
-                Rights = new List<string> { "VIEW_REPORTS", "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE", "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE" },
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
-            context.SaveChanges();
-            Console.WriteLine("✅ Seeded initial admin user: admin@demo.com / password123");
-        }
-        else
-        {
-            var adminUser = context.Users.FirstOrDefault(u => u.Email == "admin@demo.com");
-            if (adminUser != null)
-            {
-                adminUser.Rights = new List<string> { "VIEW_REPORTS", "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE", "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE" };
-                context.Users.Update(adminUser);
-                context.SaveChanges();
-            }
-        }
+        // Seed database initialization - remove hardcoded credentials
+        // Admin users should be created through secure registration flow
+        Console.WriteLine("✅ Database migrated successfully");
+
     }
     catch (Exception ex)
     {

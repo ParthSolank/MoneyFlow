@@ -43,7 +43,7 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
     try {
-      const data = await api.post<any>("/auth/login", values);
+      const data = await api.post<any>("/Auth/login", values);
       login(data.token);
 
       toast({

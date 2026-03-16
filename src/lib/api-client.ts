@@ -3,7 +3,7 @@
  * This module provides functions to interact with the .NET API backend
  */
 
-import { api } from '@/lib/api';
+import { api, API_BASE_URL } from '@/lib/api';
 
 // Transaction Types
 export interface Transaction {
@@ -132,49 +132,49 @@ export interface FinancialYear {
 export const transactionApi = {
     // Get all transactions
     getAll: async (): Promise<Transaction[]> => {
-        return api.get('/transactions');
+        return api.get('/Transactions');
     },
 
     // Get transaction by ID
     getById: async (id: number): Promise<Transaction> => {
-        return api.get(`/transactions/${id}`);
+        return api.get(`/Transactions/${id}`);
     },
 
     // Get transactions by type
     getByType: async (type: 'income' | 'expense'): Promise<Transaction[]> => {
-        return api.get(`/transactions/type/${type}`);
+        return api.get(`/Transactions/type/${type}`);
     },
 
     // Get transactions by payment method
     getByPaymentMethod: async (method: 'bank' | 'credit' | 'cash'): Promise<Transaction[]> => {
-        return api.get(`/transactions/payment-method/${method}`);
+        return api.get(`/Transactions/payment-method/${method}`);
     },
 
     // Get transactions by category
     getByCategory: async (category: string): Promise<Transaction[]> => {
-        return api.get(`/transactions/category/${encodeURIComponent(category)}`);
+        return api.get(`/Transactions/category/${encodeURIComponent(category)}`);
     },
 
     // Get all categories
     getCategories: async (): Promise<string[]> => {
-        return api.get('/transactions/categories');
+        return api.get('/Transactions/categories');
     },
 
     // Get transactions by ledger ID
     getByLedgerId: async (ledgerId: number, page: number = 1, pageSize: number = 50): Promise<{ items: Transaction[], totalCount: number }> => {
-        return api.get(`/transactions/ledger/${ledgerId}?page=${page}&pageSize=${pageSize}`);
+        return api.get(`/Transactions/ledger/${ledgerId}?page=${page}&pageSize=${pageSize}`);
     },
 
     // Get transactions by date range
     getByDateRange: async (startDate: string, endDate: string): Promise<Transaction[]> => {
         return api.get(
-            `/transactions/date-range?start=${startDate}&end=${endDate}`
+            `/Transactions/date-range?start=${startDate}&end=${endDate}`
         );
     },
 
     // Get transaction statistics
     getStats: async (startDate?: string, endDate?: string): Promise<TransactionStats> => {
-        let url = '/transactions/stats/summary';
+        let url = '/Transactions/stats/summary';
         const params = new URLSearchParams();
         if (startDate) params.append('start', startDate);
         if (endDate) params.append('end', endDate);
@@ -185,17 +185,17 @@ export const transactionApi = {
 
     // Create transaction
     create: async (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<Transaction> => {
-        return api.post('/transactions', transaction);
+        return api.post('/Transactions', transaction);
     },
 
     // Update transaction
     update: async (id: number, transaction: Partial<Transaction>): Promise<void> => {
-        return api.put(`/transactions/${id}`, { id, ...transaction });
+        return api.put(`/Transactions/${id}`, { id, ...transaction });
     },
 
     // Delete transaction
     delete: async (id: number): Promise<void> => {
-        return api.delete(`/transactions/${id}`);
+        return api.delete(`/Transactions/${id}`);
     },
 
     // Import File
@@ -208,9 +208,9 @@ export const transactionApi = {
 
         const token = localStorage.getItem('token');
         const companyId = localStorage.getItem('companyId');
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5039/api';
+        const baseUrl = API_BASE_URL;
 
-        const response = await fetch(`${baseUrl}/transactions/import`, {
+        const response = await fetch(`${baseUrl}/Transactions/import`, {
             method: 'POST',
             headers: {
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -230,9 +230,9 @@ export const transactionApi = {
     generatePdf: async (id: number): Promise<Blob> => {
         const token = localStorage.getItem('token');
         const companyId = localStorage.getItem('companyId');
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5039/api';
+        const baseUrl = API_BASE_URL;
 
-        const response = await fetch(`${baseUrl}/transactions/${id}/pdf`, {
+        const response = await fetch(`${baseUrl}/Transactions/${id}/pdf`, {
             method: 'GET',
             headers: {
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -252,42 +252,42 @@ export const transactionApi = {
 export const ledgerApi = {
     // Get all ledgers
     getAll: async (): Promise<Ledger[]> => {
-        return api.get('/ledgers');
+        return api.get('/Ledgers');
     },
 
     // Get ledger by ID
     getById: async (id: number): Promise<Ledger> => {
-        return api.get(`/ledgers/${id}`);
+        return api.get(`/Ledgers/${id}`);
     },
 
     // Get ledgers by account type
     getByType: async (type: 'bank' | 'credit'): Promise<Ledger[]> => {
-        return api.get(`/ledgers/type/${type}`);
+        return api.get(`/Ledgers/type/${type}`);
     },
 
     // Get ledger statistics
     getStats: async (): Promise<LedgerStats> => {
-        return api.get('/ledgers/stats/summary');
+        return api.get('/Ledgers/stats/summary');
     },
 
     // Create ledger
     create: async (ledger: Omit<Ledger, 'id' | 'createdAt' | 'updatedAt'>): Promise<Ledger> => {
-        return api.post('/ledgers', ledger);
+        return api.post('/Ledgers', ledger);
     },
 
     // Update ledger
     update: async (id: number, ledger: Partial<Ledger>): Promise<void> => {
-        return api.put(`/ledgers/${id}`, { id, ...ledger });
+        return api.put(`/Ledgers/${id}`, { id, ...ledger });
     },
 
     // Update ledger balance only
     updateBalance: async (id: number, balance: number): Promise<void> => {
-        return api.patch(`/ledgers/${id}/balance`, { balance });
+        return api.patch(`/Ledgers/${id}/balance`, { balance });
     },
 
     // Delete ledger
     delete: async (id: number): Promise<void> => {
-        return api.delete(`/ledgers/${id}`);
+        return api.delete(`/Ledgers/${id}`);
     },
 };
 
@@ -297,27 +297,27 @@ export const ledgerApi = {
 export const userApi = {
     // Get all users
     getAll: async (): Promise<User[]> => {
-        return api.get('/users');
+        return api.get('/Users');
     },
 
     // Create user
     create: async (user: Partial<User> & { password?: string }): Promise<User> => {
-        return api.post('/users', user);
+        return api.post('/Users', user);
     },
 
     // Update user
     update: async (id: number, user: Partial<User>): Promise<void> => {
-        return api.put(`/users/${id}`, user);
+        return api.put(`/Users/${id}`, user);
     },
 
     // Reset password
     resetPassword: async (id: number, newPassword: string): Promise<void> => {
-        return api.patch(`/users/${id}/password`, { newPassword });
+        return api.patch(`/Users/${id}/password`, { newPassword });
     },
 
     // Delete user
     delete: async (id: number): Promise<void> => {
-        return api.delete(`/users/${id}`);
+        return api.delete(`/Users/${id}`);
     },
 };
 
@@ -327,7 +327,7 @@ export const userApi = {
 export const auditApi = {
     // Get all audit logs
     getAll: async (): Promise<AuditLog[]> => {
-        return api.get('/audit');
+        return api.get('/Audit');
     }
 };
 
@@ -336,23 +336,23 @@ export const auditApi = {
  */
 export const companyApi = {
     getAll: async (): Promise<Company[]> => {
-        return api.get('/companies');
+        return api.get('/Companies');
     },
 
     getById: async (id: number): Promise<Company> => {
-        return api.get(`/companies/${id}`);
+        return api.get(`/Companies/${id}`);
     },
 
     create: async (company: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>): Promise<Company> => {
-        return api.post('/companies', company);
+        return api.post('/Companies', company);
     },
 
     update: async (id: number, company: Partial<Company>): Promise<void> => {
-        return api.put(`/companies/${id}`, company);
+        return api.put(`/Companies/${id}`, company);
     },
 
     delete: async (id: number): Promise<void> => {
-        return api.delete(`/companies/${id}`);
+        return api.delete(`/Companies/${id}`);
     }
 };
 
@@ -361,42 +361,42 @@ export const companyApi = {
  */
 export const financialYearApi = {
     getAll: async (): Promise<FinancialYear[]> => {
-        return api.get('/financialyears');
+        return api.get('/FinancialYears');
     },
 
     getById: async (id: number): Promise<FinancialYear> => {
-        return api.get(`/financialyears/${id}`);
+        return api.get(`/FinancialYears/${id}`);
     },
 
     create: async (fy: Omit<FinancialYear, 'id' | 'createdAt' | 'updatedAt'>): Promise<FinancialYear> => {
-        return api.post('/financialyears', fy);
+        return api.post('/FinancialYears', fy);
     },
 
     update: async (id: number, fy: Partial<FinancialYear>): Promise<void> => {
-        return api.put(`/financialyears/${id}`, fy);
+        return api.put(`/FinancialYears/${id}`, fy);
     },
 
     delete: async (id: number): Promise<void> => {
-        return api.delete(`/financialyears/${id}`);
+        return api.delete(`/FinancialYears/${id}`);
     }
 };
 
 // Category API
 export const categoryApi = {
     getAll: async (): Promise<Category[]> => {
-        return api.get('/categories');
+        return api.get('/Categories');
     },
     create: async (category: Omit<Category, 'id'>): Promise<Category> => {
-        return api.post('/categories', category);
+        return api.post('/Categories', category);
     },
     update: async (id: number, category: Partial<Category>): Promise<void> => {
-        return api.put(`/categories/${id}`, category);
+        return api.put(`/Categories/${id}`, category);
     },
     delete: async (id: number): Promise<void> => {
-        return api.delete(`/categories/${id}`);
+        return api.delete(`/Categories/${id}`);
     },
     seed: async (): Promise<void> => {
-        return api.post('/categories/seed', {});
+        return api.post('/Categories/seed', {});
     }
 };
 
@@ -406,18 +406,18 @@ export const budgetApi = {
         const query = new URLSearchParams();
         if (month) query.append('month', month.toString());
         if (year) query.append('year', year.toString());
-        return api.get(`/budgets?${query.toString()}`);
+        return api.get(`/Budgets?${query.toString()}`);
     },
     getStatus: async (month: number, year: number): Promise<BudgetStatus[]> => {
-        return api.get(`/budgets/status?month=${month}&year=${year}`);
+        return api.get(`/Budgets/status?month=${month}&year=${year}`);
     },
     create: async (budget: Omit<Budget, 'id'>): Promise<Budget> => {
-        return api.post('/budgets', budget);
+        return api.post('/Budgets', budget);
     },
     update: async (id: number, budget: Partial<Budget>): Promise<void> => {
-        return api.put(`/budgets/${id}`, budget);
+        return api.put(`/Budgets/${id}`, budget);
     },
     delete: async (id: number): Promise<void> => {
-        return api.delete(`/budgets/${id}`);
+        return api.delete(`/Budgets/${id}`);
     }
 };

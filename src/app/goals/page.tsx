@@ -155,11 +155,11 @@ export default function GoalsPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-black text-purple-600">
-                        {((goal.currentAmount / goal.targetAmount) * 100).toFixed(0)}%
+                        {goal.targetAmount > 0 ? ((goal.currentAmount / goal.targetAmount) * 100).toFixed(0) : '0'}%
                       </p>
                     </div>
                   </div>
-                  <Progress value={(goal.currentAmount / goal.targetAmount) * 100} className="h-3 rounded-full bg-gray-100" />
+                  <Progress value={goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0} className="h-3 rounded-full bg-gray-100" />
                   
                   <div className="mt-6 flex flex-col gap-3">
                     <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase tracking-widest">

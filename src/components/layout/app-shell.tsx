@@ -24,17 +24,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         setIsMobileMenuOpen(false);
     }, [pathname]);
 
+    // Prevent body scroll when mobile menu is open
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        };
+    }, [isMobileMenuOpen]);
+
     useEffect(() => {
         setMounted(true);
     }, []);
 
     useEffect(() => {
-        if (!loading && mounted) {
-            if (!user && !isAuthPage) {
-                router.replace("/login");
-            } else if (user && isAuthPage) {
-                router.replace("/");
-            }
+        if (mounted && typeof window !== 'undefined') {
+            const storedCompanyId = localStorage.getItem('companyId');
+            console.log("[DEBUG] Auth State:", {
+                companyId,
+                storedCompanyId,
+                userId: user?.id,
+                username: user?.username
+            });
+        }
+    }, [user, companyId, mounted]);
+
+    useEffect(() => {
+        // Prevent navigation race conditions by waiting for hydration and auth loading
+        if (!mounted) return;
+        if (loading) return; // Wait for auth state to load
+
+        if (!user && !isAuthPage) {
+            router.replace("/login");
+        } else if (user && isAuthPage) {
+            router.replace("/");
         }
     }, [user, loading, isAuthPage, router, mounted]);
 

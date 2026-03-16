@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyFlowApi.Models;
 using MoneyFlowApi.Services;
 using MoneyFlowApi.Attributes;
+using MoneyFlowApi.Data;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -17,11 +18,13 @@ public class TransactionsController : ControllerBase
 {
     private readonly TransactionService _transactionService;
     private readonly AuditLogService _auditLogService;
+    private readonly MoneyFlowDbContext _context;
 
-    public TransactionsController(TransactionService transactionService, AuditLogService auditLogService)
+    public TransactionsController(TransactionService transactionService, AuditLogService auditLogService, MoneyFlowDbContext context)
     {
         _transactionService = transactionService;
         _auditLogService = auditLogService;
+        _context = context;
     }
 
     // GET: api/transactions
@@ -169,6 +172,14 @@ public class TransactionsController : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
+
+        // Validate ledger exists before creating transaction
+        if (transaction.LedgerId.HasValue)
+        {
+            var ledgerExists = await _context.Ledgers.FindAsync(transaction.LedgerId.Value);
+            if (ledgerExists == null)
+                return BadRequest(new { message = $"Ledger with ID {transaction.LedgerId} not found" });
+        }
 
         try
         {

@@ -41,17 +41,18 @@ public class LedgerService
 
     // Get ledger by ID
     public async Task<Ledger?> GetByIdAsync(int id) {
-        var ledger = await GetBaseQuery().FirstOrDefaultAsync(l => l.Id == id);
-        
-        if (ledger != null) {
-            // Explicitly load transactions to ensure they are fetched correctly
-            // even if global filters are complex
-            ledger.Transactions = await _context.Transactions
-                .Where(t => t.LedgerId == id && !t.IsDeleted)
+        var ledger = await GetBaseQuery()
+            .Include(l => l.Transactions.Where(t => !t.IsDeleted))
+            .FirstOrDefaultAsync(l => l.Id == id);
+
+        if (ledger != null && ledger.Transactions != null)
+        {
+            // Sort transactions after fetch to avoid EF ordering issues
+            ledger.Transactions = ledger.Transactions
                 .OrderByDescending(t => t.Date)
-                .ToListAsync();
+                .ToList();
         }
-        
+
         return ledger;
     }
 

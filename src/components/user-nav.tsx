@@ -64,6 +64,15 @@ export function UserNav() {
                 <DropdownMenuSeparator />
 
                 <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                    onSelect={() => {
+                        localStorage.removeItem('companyId');
+                        window.location.reload();
+                    }} 
+                    className="cursor-pointer"
+                >
+                    Change Company
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={logout} className="text-red-500 font-medium cursor-pointer">
                     Log out
                 </DropdownMenuItem>

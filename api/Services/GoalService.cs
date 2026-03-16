@@ -18,7 +18,7 @@ public class GoalService
     public async Task<List<Goal>> GetAllAsync()
     {
         return await _context.Goals
-            .Where(g => !g.IsDeleted)
+            .Where(g => !g.IsDeleted && g.CompanyId == _userContext.CompanyId)
             .Include(g => g.Ledger)
             .OrderByDescending(g => g.CreatedAt)
             .ToListAsync();
@@ -27,8 +27,8 @@ public class GoalService
     public async Task<Goal?> GetByIdAsync(int id)
     {
         return await _context.Goals
-            .Where(g => !g.IsDeleted)
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .Where(g => !g.IsDeleted && g.CompanyId == _userContext.CompanyId && g.Id == id)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<Goal> CreateAsync(Goal goal)
@@ -92,7 +92,7 @@ public class GoalService
         try
         {
             var goal = await _context.Goals
-                .Where(g => !g.IsDeleted && g.Id == goalId)
+                .Where(g => !g.IsDeleted && g.Id == goalId && g.CompanyId == _userContext.CompanyId)
                 .FirstOrDefaultAsync();
             if (goal == null) throw new Exception("Goal not found");
 
@@ -109,10 +109,8 @@ public class GoalService
             _context.GoalContributions.Add(contribution);
             await _context.SaveChangesAsync();
 
-            goal.UpdatedAt = DateTime.UtcNow;
-            _context.Goals.Update(goal);
-
-            // Use atomic database update to prevent race condition
+            // Use ONLY atomic database update - don't do separate in-memory update
+            // This ensures the update is truly atomic even with concurrent requests
             await _context.Goals
                 .Where(g => g.Id == goalId)
                 .ExecuteUpdateAsync(s => s

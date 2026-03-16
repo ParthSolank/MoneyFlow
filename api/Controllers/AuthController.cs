@@ -59,6 +59,7 @@ public class AuthController : ControllerBase
         try
         {
             var response = await _authService.LoginAsync(request);
+            SetAccessTokenCookie(response.Token);
             SetRefreshTokenCookie(response.RefreshToken);
             return Ok(response);
         }
@@ -79,12 +80,13 @@ public class AuthController : ControllerBase
             if (string.IsNullOrEmpty(refreshToken))
                 return Unauthorized(new { message = "Refresh token is missing." });
 
-            var response = await _authService.RefreshTokenAsync(new RefreshTokenRequest 
-            { 
+            var response = await _authService.RefreshTokenAsync(new RefreshTokenRequest
+            {
                 Token = request?.Token ?? Request.Headers["Authorization"].ToString().Replace("Bearer ", ""),
-                RefreshToken = refreshToken 
+                RefreshToken = refreshToken
             });
 
+            SetAccessTokenCookie(response.Token);
             SetRefreshTokenCookie(response.RefreshToken);
             return Ok(response);
         }
@@ -101,8 +103,21 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public IActionResult Logout()
     {
+        Response.Cookies.Delete("accessToken");
         Response.Cookies.Delete("refreshToken");
         return Ok(new { message = "Logged out successfully" });
+    }
+
+    private void SetAccessTokenCookie(string accessToken)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true, // Set to true in production
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddMinutes(15)
+        };
+        Response.Cookies.Append("accessToken", accessToken, cookieOptions);
     }
 
     private void SetRefreshTokenCookie(string refreshToken)

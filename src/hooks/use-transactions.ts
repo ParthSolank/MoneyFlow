@@ -27,7 +27,7 @@ export function useTransactions(startDate?: string, endDate?: string, page: numb
             }
             // For standard getAll, we should pass pagination if we update the API client, 
             // but for now the SWR key change will force re-fetch and the API uses query params
-            return api.get(`/transactions?page=${page}&pageSize=${pageSize}`);
+            return api.get(`/Transactions?page=${page}&pageSize=${pageSize}`);
         },
         {
             revalidateOnFocus: false,

@@ -73,9 +73,6 @@ export default function TransactionsPage() {
     import("@/lib/api-client").then(({ ledgerApi, categoryApi }) => {
       ledgerApi.getAll().then((data) => {
         setLedgers(data);
-        if (data && data.length > 0 && data[0].id) {
-          setFilterLedger(data[0].id.toString());
-        }
       }).catch(console.error);
 
       categoryApi.getAll().then((data) => {
@@ -143,12 +140,51 @@ export default function TransactionsPage() {
 
   const handleSaveTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validation
+    if (!formData.description.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Description is required.",
+      })
+      return
+    }
+
+    const amount = parseFloat(formData.amount)
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Amount must be a positive number.",
+      })
+      return
+    }
+
+    if (!formData.category) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Category is required.",
+      })
+      return
+    }
+
+    if (!formData.ledgerId) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Account is required.",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
       const payload = {
         ...formData,
-        amount: parseFloat(formData.amount),
+        amount: amount,
         type: formData.type as 'income' | 'expense',
         paymentMethod: formData.paymentMethod as 'bank' | 'credit' | 'cash',
         ledgerId: parseInt(formData.ledgerId)
@@ -295,7 +331,8 @@ export default function TransactionsPage() {
               <Dialog open={isImportOpen} onOpenChange={(open) => {
                 setIsImportOpen(open);
                 if (!open) {
-                  setTimeout(() => { document.body.style.pointerEvents = ""; }, 500);
+                  // Ensure pointer events are enabled after dialog closes
+                  document.body.style.pointerEvents = "auto";
                 }
               }}>
                 <DialogTrigger asChild>
@@ -361,8 +398,8 @@ export default function TransactionsPage() {
                     date: new Date().toISOString().split('T')[0]
                   });
 
-                  // Radix UI Pointer Events Hack - Forcefully unlock the UI after dialog animations finish
-                  setTimeout(() => { document.body.style.pointerEvents = ""; }, 500);
+                  // Ensure pointer events are enabled after dialog closes
+                  document.body.style.pointerEvents = "auto";
                 }
               }}>
                 <DialogTrigger asChild>
@@ -663,7 +700,7 @@ export default function TransactionsPage() {
                       className="group hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors border-b border-gray-50 dark:border-gray-800/50"
                     >
                       <TableCell className="font-medium text-gray-700 dark:text-gray-300">
-                        {new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </TableCell>
                       <TableCell className="font-semibold text-gray-900 dark:text-gray-100">{tx.description}</TableCell>
                       <TableCell>

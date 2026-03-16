@@ -50,10 +50,13 @@ export default function LedgersPage() {
   // Fetch ledgers from API
   const fetchLedgers = async (backgroundRefresh = false) => {
     if (!backgroundRefresh) setIsLoading(true)
+    console.log("[LedgersPage] Fetching ledgers...");
     try {
       const data = await ledgerApi.getAll()
+      console.log("[LedgersPage] Received ledgers:", data);
       setLedgers(data)
     } catch (error) {
+      console.error("[LedgersPage] Fetch error:", error);
       toast({ variant: "destructive", title: "Failed to load ledgers" })
     } finally {
       if (!backgroundRefresh) setIsLoading(false)

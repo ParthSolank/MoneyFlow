@@ -59,11 +59,17 @@ public class AuthService : IAuthService
 
         _context.Users.Add(newUser);
         await _context.SaveChangesAsync();
-        
-        // Log to console for easy local testing when SMTP is not configured
-        Console.WriteLine($"\n[MoneyFlow Security] -> Activation Key for {request.Email} is: {activationKey}\n");
 
-        _ = SendActivationEmailAsync(request.Email, activationKey);
+        // Send activation email (handle properly - don't fire-and-forget)
+        try
+        {
+            await SendActivationEmailAsync(request.Email, activationKey);
+        }
+        catch (Exception ex)
+        {
+            // Log error but still return success - user can request resend
+            Console.WriteLine($"Warning: Email sending failed for {request.Email}: {ex.Message}");
+        }
 
         return new { message = "Registration successful. Please check your email to activate your account.", email = request.Email };
     }

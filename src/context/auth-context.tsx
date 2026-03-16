@@ -56,33 +56,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
         const storedCompanyId = localStorage.getItem('companyId');
 
         if (storedCompanyId) {
-            setCompanyIdState(parseInt(storedCompanyId));
+            setCompanyIdState(parseInt(storedCompanyId, 10));
         }
 
-        if (token) {
-            const userData = getUserFromToken(token);
-            if (userData) {
-                setUser(userData);
-            } else {
-                localStorage.removeItem('token');
-            }
-        }
+        // User info is decoded from JWT which is now in HttpOnly cookie
+        // No need to retrieve from localStorage
         setLoading(false);
     }, []);
 
     const login = React.useCallback((token: string) => {
-        localStorage.setItem('token', token);
+        // Token is now stored in HttpOnly cookie by the backend
+        // Extract and set user info from JWT
         const userData = getUserFromToken(token);
         setUser(userData);
-        // We handle navigation in AppShell or the login page itself to avoid double push
     }, []);
 
     const register = React.useCallback((token: string) => {
-        localStorage.setItem('token', token);
+        // Token is now stored in HttpOnly cookie by the backend
+        // Extract and set user info from JWT
         const userData = getUserFromToken(token);
         setUser(userData);
     }, []);
@@ -102,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error('Failed to logout from server', error);
         }
-        localStorage.removeItem('token');
+        // Cookies are cleared by the backend via Set-Cookie headers
         localStorage.removeItem('companyId');
         setUser(null);
         setCompanyIdState(null);
