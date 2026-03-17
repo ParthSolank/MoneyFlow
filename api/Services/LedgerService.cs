@@ -70,6 +70,12 @@ public class LedgerService
         ledger.UpdatedAt = DateTime.UtcNow;
         ledger.CompanyId = _userContext.CompanyId;
         ledger.InitialBalance = ledger.Balance; // Set initial balance to current balance on creation
+
+        var exists = await GetBaseQuery().AnyAsync(l => l.Name.ToLower() == ledger.Name.ToLower());
+        if (exists)
+        {
+            throw new InvalidOperationException($"An account/ledger with the name '{ledger.Name}' already exists.");
+        }
         
         _context.Ledgers.Add(ledger);
         await _context.SaveChangesAsync();

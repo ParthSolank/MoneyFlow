@@ -289,4 +289,55 @@ public class AuthService : IAuthService
             return null;
         }
     }
+
+    public async Task<bool> SeedMasterAsync()
+    {
+        var masterEmail = "solankiparth2126@gmail.com";
+        var masterUsername = "home finance";
+        var masterPassword = "kakar";
+
+        var masterUser = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Username == masterUsername);
+        if (masterUser != null)
+        {
+            if (masterUser.Email != masterEmail)
+            {
+                masterUser.Email = masterEmail;
+                masterUser.UpdatedAt = DateTime.UtcNow;
+                _context.Users.Update(masterUser);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(masterPassword);
+
+        var masterUser = new User
+        {
+            Username = masterUsername,
+            Email = masterEmail,
+            PasswordHash = passwordHash,
+            Role = "Admin",
+            IsActive = true,
+            Rights = new List<string> 
+            { 
+                "CORE_DASHBOARD_VIEW", "CORE_DASHBOARD_CREATE", "CORE_DASHBOARD_EDIT", "CORE_DASHBOARD_DELETE",
+                "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE",
+                "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE",
+                "CORE_CATEGORIES_VIEW", "CORE_CATEGORIES_CREATE", "CORE_CATEGORIES_EDIT", "CORE_CATEGORIES_DELETE",
+                "CORE_BUDGETS_VIEW", "CORE_BUDGETS_CREATE", "CORE_BUDGETS_EDIT", "CORE_BUDGETS_DELETE",
+                "CORE_GOALS_VIEW", "CORE_GOALS_CREATE", "CORE_GOALS_EDIT", "CORE_GOALS_DELETE",
+                "CORE_RECURRING_VIEW", "CORE_RECURRING_CREATE", "CORE_RECURRING_EDIT", "CORE_RECURRING_DELETE",
+                "ADMIN_USERS_VIEW", "ADMIN_USERS_CREATE", "ADMIN_USERS_EDIT", "ADMIN_USERS_DELETE",
+                "ADMIN_AUDIT_VIEW", "ADMIN_COMPANIES_VIEW", "ADMIN_COMPANIES_CREATE"
+            },
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Users.Add(masterUser);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
 }

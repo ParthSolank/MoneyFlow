@@ -19,6 +19,7 @@ public class TransactionsController : ControllerBase
     private readonly TransactionService _transactionService;
     private readonly AuditLogService _auditLogService;
     private readonly MoneyFlowDbContext _context;
+    private const int MAX_PAGE_SIZE = 100;
 
     public TransactionsController(TransactionService transactionService, AuditLogService auditLogService, MoneyFlowDbContext context)
     {
@@ -35,8 +36,8 @@ public class TransactionsController : ControllerBase
         // Validate pagination input
         if (page < 1)
             return BadRequest(new { message = "Page must be >= 1" });
-        if (pageSize < 1 || pageSize > 100)
-            return BadRequest(new { message = "PageSize must be between 1 and 100" });
+        if (pageSize < 1 || pageSize > MAX_PAGE_SIZE)
+            return BadRequest(new { message = $"PageSize must be between 1 and {MAX_PAGE_SIZE}" });
 
         var result = await _transactionService.GetAllAsync(page, pageSize);
         return Ok(result);

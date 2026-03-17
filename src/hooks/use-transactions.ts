@@ -16,7 +16,7 @@ export function useTransactions(startDate?: string, endDate?: string, page: numb
     queryParams.append('page', page.toString());
     queryParams.append('pageSize', pageSize.toString());
 
-    const cacheKey = `api/transactions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const cacheKey = { url: 'api/transactions', start: startDate, end: endDate, page, pageSize };
 
     const { data, error, isLoading, mutate } = useSWR(
         cacheKey,

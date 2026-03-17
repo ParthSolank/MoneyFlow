@@ -37,7 +37,21 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
 
   const handleAddContribution = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.amount || parseFloat(formData.amount) <= 0) return
+    const amount = parseFloat(formData.amount)
+    if (!formData.amount || amount <= 0) return
+
+    // Validation: Check if ledger has enough balance
+    if (formData.ledgerId) {
+      const selectedLedger = ledgers.find((l: any) => l.id.toString() === formData.ledgerId)
+      if (selectedLedger && selectedLedger.accountType !== 'credit' && selectedLedger.balance < amount) {
+        toast({
+          title: "Insufficient Balance",
+          description: `The selected account (${selectedLedger.name}) only has ₹${selectedLedger.balance.toLocaleString()}.`,
+          variant: "destructive"
+        })
+        return
+      }
+    }
 
     setIsSubmitting(true)
     try {

@@ -138,15 +138,15 @@ export const api = {
         const res = await fetchWithAuth(url);
         return handleResponse<T>(res);
     },
-    post: async <T>(url: string, body: any): Promise<T> => {
+    post: async <T>(url: string, body: Record<string, unknown> | unknown): Promise<T> => {
         const res = await fetchWithAuth(url, { method: 'POST', body: JSON.stringify(body) });
         return handleResponse<T>(res);
     },
-    put: async <T>(url: string, body: any): Promise<T> => {
+    put: async <T>(url: string, body: Record<string, unknown> | unknown): Promise<T> => {
         const res = await fetchWithAuth(url, { method: 'PUT', body: JSON.stringify(body) });
         return handleResponse<T>(res);
     },
-    patch: async <T>(url: string, body: any): Promise<T> => {
+    patch: async <T>(url: string, body: Record<string, unknown> | unknown): Promise<T> => {
         const res = await fetchWithAuth(url, { method: 'PATCH', body: JSON.stringify(body) });
         return handleResponse<T>(res);
     },

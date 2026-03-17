@@ -108,6 +108,23 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully" });
     }
 
+    [HttpGet("seed-master")]
+    public async Task<IActionResult> SeedMaster()
+    {
+        try
+        {
+            var success = await _authService.SeedMasterAsync();
+            if (success)
+                return Ok(new { message = "Master account 'home finance' created successfully!" });
+            else
+                return Conflict(new { message = "Master account already exists." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
     private void SetAccessTokenCookie(string accessToken)
     {
         var cookieOptions = new CookieOptions

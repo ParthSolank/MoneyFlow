@@ -17,6 +17,7 @@ import { CashFlowCalendar } from "@/components/dashboard/cash-flow-calendar";
 import { getCurrentFinancialYear } from "@/lib/financial-year-utils";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, useMemo } from "react";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const iconMap: Record<string, any> = {
   Wallet,
@@ -100,10 +101,14 @@ export default function Dashboard() {
       </div>
 
       <div className="pt-2">
-        <SummaryCards startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
+        <ErrorBoundary>
+          <SummaryCards startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
+        </ErrorBoundary>
       </div>
 
-      <SmartInsights />
+      <ErrorBoundary>
+        <SmartInsights />
+      </ErrorBoundary>
 
       {!loadingLedgers && ledgers.length === 0 && (
           <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden relative group">
@@ -143,9 +148,13 @@ export default function Dashboard() {
           </Card>
       )}
 
-      <DashboardCharts startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
+      <ErrorBoundary>
+        <DashboardCharts startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
+      </ErrorBoundary>
 
-      <CashFlowCalendar />
+      <ErrorBoundary>
+        <CashFlowCalendar />
+      </ErrorBoundary>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 2xl:grid-cols-12">
         <div className="lg:col-span-4 2xl:col-span-8 h-full">

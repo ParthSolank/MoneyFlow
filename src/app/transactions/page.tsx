@@ -37,7 +37,8 @@ export default function TransactionsPage() {
   const { canCreate, canEdit, canDelete } = usePermissions();
 
   const [selectedFY, setSelectedFY] = useState(getCurrentFinancialYear());
-  const { transactions, isLoading, mutate } = useTransactions(selectedFY.startDate, selectedFY.endDate);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { transactions, isLoading, mutate, totalPages } = useTransactions(selectedFY.startDate, selectedFY.endDate, currentPage);
   const [searchTerm, setSearchTerm] = useState("")
 
   // Form State
@@ -69,6 +70,11 @@ export default function TransactionsPage() {
 
   const { toast } = useToast()
 
+  // Reset page on filter change (#32)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterType, filterPayment, filterCategory, filterLedger, selectedFY]);
+
   useEffect(() => {
     import("@/lib/api-client").then(({ ledgerApi, categoryApi }) => {
       ledgerApi.getAll().then((data) => {
@@ -83,9 +89,9 @@ export default function TransactionsPage() {
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t: Transaction) => {
-      if (!t || !t.description) return false;
+      if (!t) return false;
 
-      const desc = t.description.toLowerCase() || "";
+      const desc = (t.description || "").toLowerCase();
       const cat = (t.category || "").toLowerCase();
       const search = searchTerm.toLowerCase();
 
@@ -104,11 +110,13 @@ export default function TransactionsPage() {
     const credit = filteredTransactions.reduce((acc: number, tx: Transaction) => tx.type === 'income' ? acc + tx.amount : acc, 0);
 
     const involvedLedgerIds = new Set(filteredTransactions.map((t: Transaction) => t.ledgerId?.toString()).filter(Boolean));
-    const startingBal = ledgers
+    const currentTotalBalance = ledgers
       .filter(l => l.id && involvedLedgerIds.has(l.id.toString()))
       .reduce((acc, l) => acc + (l.balance || 0), 0);
 
-    const finalBal = startingBal + credit - debit;
+    // Set Final Balance to current ledger state and back-calculate Opening
+    const finalBal = currentTotalBalance;
+    const startingBal = finalBal - credit + debit;
 
     return { totalDebit: debit, totalCredit: credit, startingBalance: startingBal, finalBalance: finalBal };
   }, [filteredTransactions, ledgers]);
@@ -135,7 +143,7 @@ export default function TransactionsPage() {
   }
 
   // Helper to get unique categories for filter
-  const uniqueCategories = Array.from(new Set(transactions.map((t: Transaction) => t.category))) as string[];
+  const uniqueCategories = Array.from(new Set(transactions.map((t: Transaction) => t.category))).filter(Boolean) as string[];
 
 
   const handleSaveTransaction = async (e: React.FormEvent) => {
@@ -316,45 +324,58 @@ export default function TransactionsPage() {
       variants={containerVariants}
       className="space-y-8 p-1 pb-24"
     >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400">Transactions</h1>
-          <p className="text-muted-foreground mt-1">Manage and track your detailed spending history.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-white/50 backdrop-blur-md p-1.5 px-3 rounded-lg shadow-sm border border-indigo-50 dark:bg-gray-900/50 dark:border-gray-800">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">FY</span>
-            <FYSelector value={selectedFY} onValueChange={setSelectedFY} />
+      <div className="relative group">
+        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-600/20 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white/70 backdrop-blur-2xl p-8 rounded-3xl ring-1 ring-gray-200/50 shadow-2xl dark:bg-gray-950/70 dark:ring-gray-800">
+          <div className="space-y-2">
+            <div className="flex items-center gap-4">
+              <div className="p-3.5 bg-indigo-600 rounded-2xl text-white shadow-xl shadow-indigo-200 dark:shadow-none animate-pulse">
+                <ReceiptText className="h-7 w-7" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-black tracking-tighter text-gray-900 dark:text-gray-100 uppercase">
+                  Cash <span className="text-indigo-600">Flow</span>
+                </h1>
+                <p className="text-muted-foreground font-medium text-sm">
+                  Systematic tracking of your financial footprint
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <div className="flex gap-2">
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="bg-white/50 dark:bg-gray-900/50 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center gap-3 pr-4">
+              <div className="h-8 w-8 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                <Filter className="h-4 w-4 text-gray-500" />
+              </div>
+              <FYSelector value={selectedFY} onValueChange={setSelectedFY} />
+            </div>
+
+            <div className="flex items-center gap-2">
               <Dialog open={isImportOpen} onOpenChange={(open) => {
                 setIsImportOpen(open);
-                if (!open) {
-                  // Ensure pointer events are enabled after dialog closes
-                  document.body.style.pointerEvents = "auto";
-                }
+                if (!open) document.body.style.pointerEvents = "auto";
               }}>
                 <DialogTrigger asChild>
                   {canCreate("CORE", "TRANSACTIONS") && (
-                    <Button variant="outline" className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50" disabled={isImporting}>
+                    <Button variant="outline" className="h-12 px-5 rounded-2xl border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all font-bold gap-2" disabled={isImporting}>
                       <UploadCloud className="h-4 w-4" />
-                      Import File
+                      Import
                     </Button>
                   )}
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[425px] rounded-3xl">
                   <form onSubmit={handleImportSubmit}>
                     <DialogHeader>
-                      <DialogTitle>Import Transactions</DialogTitle>
+                      <DialogTitle className="text-2xl font-black uppercase tracking-tight">Bulk Import</DialogTitle>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-6 py-6">
                       <div className="grid gap-2">
-                        <Label>Select Account (Optional)</Label>
+                        <Label className="text-xs font-bold uppercase text-gray-400">Target Ledger</Label>
                         <Select value={importLedgerId} onValueChange={setImportLedgerId}>
-                          <SelectTrigger><SelectValue placeholder="No specific ledger selected" /></SelectTrigger>
+                          <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="No specific ledger" /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">No Specific Ledger</SelectItem>
+                            <SelectItem value="none">General Pool</SelectItem>
                             {ledgers.map(l => (
                               <SelectItem key={l.id} value={l.id?.toString() || ""}>{l.name}</SelectItem>
                             ))}
@@ -362,13 +383,19 @@ export default function TransactionsPage() {
                         </Select>
                       </div>
                       <div className="grid gap-2">
-                        <Label>Upload File</Label>
-                        <Input type="file" accept=".csv, .xls, .xlsx" onChange={(e) => setImportFile(e.target.files?.[0] || null)} required />
+                        <Label className="text-xs font-bold uppercase text-gray-400">Statement File</Label>
+                        <div className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-8 text-center hover:border-indigo-400 transition-colors">
+                          <Input type="file" id="file-upload" className="hidden" accept=".csv, .xls, .xlsx" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
+                          <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                            <FileDown className="h-8 w-8 text-gray-300" />
+                            <span className="text-sm font-semibold">{importFile ? importFile.name : "Click to select CSV/Excel"}</span>
+                          </label>
+                        </div>
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button type="submit" disabled={isImporting || !importFile} className="w-full">
-                        {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Start Import"}
+                      <Button type="submit" disabled={isImporting || !importFile} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold uppercase tracking-widest text-xs">
+                        {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Start Processing"}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -377,13 +404,14 @@ export default function TransactionsPage() {
 
               <Button
                 variant="outline"
-                className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                className="h-12 px-5 rounded-2xl border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all font-bold gap-2"
                 onClick={() => exportTransactionsToCSV(transactions)}
                 disabled={transactions.length === 0}
               >
                 <FileDown className="h-4 w-4" />
-                Export CSV
+                Export
               </Button>
+
               <Dialog open={isOpen} onOpenChange={(open) => {
                 setIsOpen(open);
                 if (!open) {
@@ -397,16 +425,14 @@ export default function TransactionsPage() {
                     ledgerId: "",
                     date: new Date().toISOString().split('T')[0]
                   });
-
-                  // Ensure pointer events are enabled after dialog closes
                   document.body.style.pointerEvents = "auto";
                 }
               }}>
                 <DialogTrigger asChild>
                   {canCreate("CORE", "TRANSACTIONS") && (
-                    <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-none transition-all hover:shadow-lg hover:-translate-y-0.5" disabled={isImporting}>
-                      <Plus className="h-4 w-4" />
-                      Add Transaction
+                    <Button className="h-12 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 dark:shadow-none transition-all hover:scale-105 active:scale-95 font-bold gap-2 text-white" disabled={isImporting}>
+                      <Plus className="h-5 w-5" />
+                      Add Entry
                     </Button>
                   )}
                 </DialogTrigger>
@@ -549,6 +575,7 @@ export default function TransactionsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search transactions..."
+            aria-label="Search transactions"
             className="pl-10 bg-white border-indigo-100 focus:border-indigo-300 focus:ring-indigo-100 transition-all dark:bg-gray-950 dark:border-gray-800"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -700,7 +727,7 @@ export default function TransactionsPage() {
                       className="group hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors border-b border-gray-50 dark:border-gray-800/50"
                     >
                       <TableCell className="font-medium text-gray-700 dark:text-gray-300">
-                        {new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {tx.date ? new Date(tx.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                       </TableCell>
                       <TableCell className="font-semibold text-gray-900 dark:text-gray-100">{tx.description}</TableCell>
                       <TableCell>
@@ -804,6 +831,55 @@ export default function TransactionsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Pagination Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:bg-gray-900/50 dark:border-gray-800 shadow-sm">
+        <div className="text-sm text-muted-foreground font-medium">
+          Showing <span className="text-gray-900 dark:text-gray-100 font-bold">{filteredTransactions.length}</span> results
+          {totalPages > 1 && <span> across {totalPages} pages</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl h-9 px-4 border-gray-200"
+            disabled={currentPage === 1 || isLoading}
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          >
+            Previous
+          </Button>
+          <div className="flex items-center gap-1 mx-2">
+            {[...Array(totalPages)].map((_, i) => {
+               const p = i + 1;
+               if (totalPages > 5 && p > 2 && p < totalPages - 1 && Math.abs(p - currentPage) > 1) {
+                 if (p === currentPage - 2 || p === currentPage + 2) return <span key={p} className="px-1 text-gray-300">...</span>;
+                 return null;
+               }
+               return (
+                <Button
+                  key={p}
+                  variant={p === currentPage ? "default" : "ghost"}
+                  size="sm"
+                  className={`h-9 w-9 rounded-xl p-0 ${p === currentPage ? 'bg-indigo-600 shadow-lg shadow-indigo-200' : ''}`}
+                  onClick={() => setCurrentPage(p)}
+                  disabled={isLoading}
+                >
+                  {p}
+                </Button>
+               );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl h-9 px-4 border-gray-200"
+            disabled={currentPage === totalPages || isLoading}
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
     </motion.div >
   )
 }

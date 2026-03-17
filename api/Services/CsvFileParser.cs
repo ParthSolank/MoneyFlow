@@ -31,14 +31,14 @@ public class CsvFileParser : IFileParser
             string desc = "";
             decimal amount = 0;
             string type = "expense";
-            string date = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            string dateStr = "";
 
             foreach (var key in dict.Keys)
             {
                 var lowerKey = key.ToLower();
                 var val = dict[key]?.ToString() ?? "";
 
-                if (lowerKey.Contains("date")) date = val;
+                if (lowerKey.Contains("date")) dateStr = val;
                 else if (lowerKey.Contains("desc") || lowerKey.Contains("narration") || lowerKey.Contains("remark")) desc = val;
                 else if (lowerKey.Contains("amount")) decimal.TryParse(val, out amount);
                 else if (lowerKey.Contains("withdrawal") || lowerKey.Contains("debit")) { if(decimal.TryParse(val, out var a) && a > 0) { amount = a; type = "expense"; } }
@@ -46,6 +46,18 @@ public class CsvFileParser : IFileParser
             }
 
             if (string.IsNullOrEmpty(desc) && amount == 0) continue;
+
+            // Validate and standardize date
+            string date = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            string[] dateFormats = { "dd-MMM-yyyy", "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd-MM-yyyy", "MM/dd/yy", "dd/MM/yy" };
+            if (!string.IsNullOrWhiteSpace(dateStr))
+            {
+                if (DateTime.TryParse(dateStr, out DateTime parsedDate) || 
+                    DateTime.TryParseExact(dateStr, dateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate))
+                {
+                    date = parsedDate.ToString("yyyy-MM-dd");
+                }
+            }
 
             // Auto-categorization logic
             string category = "misc";

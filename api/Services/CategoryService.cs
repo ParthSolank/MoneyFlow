@@ -53,6 +53,12 @@ public class CategoryService
             category.CompanyId = _userContext.CompanyId;
         }
 
+        var exists = await GetBaseQuery().AnyAsync(c => c.Name.ToLower() == category.Name.ToLower());
+        if (exists)
+        {
+            throw new InvalidOperationException($"A category with the name '{category.Name}' already exists.");
+        }
+
         _context.Categories.Add(category);
         await _context.SaveChangesAsync();
         

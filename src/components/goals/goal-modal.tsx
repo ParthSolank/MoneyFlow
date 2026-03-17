@@ -66,11 +66,22 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Basic Validation
-    if (!formData.title || !formData.targetAmount) {
+    const target = parseFloat(formData.targetAmount)
+    const current = parseFloat(formData.currentAmount || "0")
+
+    if (!formData.title || isNaN(target) || target <= 0) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields.",
+        description: "Please provide a valid title and positive target amount.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (current > target) {
+      toast({
+        title: "Validation Error",
+        description: "Starting amount cannot be greater than target amount.",
         variant: "destructive"
       })
       return

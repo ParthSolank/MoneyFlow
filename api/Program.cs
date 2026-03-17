@@ -192,10 +192,12 @@ using (var scope = app.Services.CreateScope())
         // This is better for production than EnsureCreated() as it supports schema evolution
         context.Database.Migrate(); 
 
+        var authService = services.GetRequiredService<IAuthService>();
+        await authService.SeedMasterAsync();
 
         // Seed database initialization - remove hardcoded credentials
         // Admin users should be created through secure registration flow
-        Console.WriteLine("✅ Database migrated successfully");
+        Console.WriteLine("✅ Database migrated successfully and master account seeded");
 
     }
     catch (Exception ex)

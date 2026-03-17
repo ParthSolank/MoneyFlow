@@ -373,11 +373,29 @@ public class TransactionService
 
         if (records.Count == 0) return 0;
 
+        // Deduplication logic: Check for existing transactions to prevent balance mismatch
+        var minDate = records.Min(r => r.Date);
+        var maxDate = records.Max(r => r.Date);
+        
+        var existingTransactions = await _context.Transactions
+            .Where(t => !t.IsDeleted && t.CompanyId == _userContext.CompanyId && 
+                        t.LedgerId == ledgerId &&
+                        string.Compare(t.Date, minDate) >= 0 &&
+                        string.Compare(t.Date, maxDate) <= 0)
+            .ToListAsync();
+
+        var newRecords = records.Where(r => !existingTransactions.Any(e => 
+            e.Date == r.Date && 
+            e.Amount == r.Amount && 
+            e.Description == r.Description)).ToList();
+
+        if (newRecords.Count == 0) return 0;
+
         using var dbTransaction = await _context.Database.BeginTransactionAsync();
         try
         {
             // Set context for all records
-            foreach (var record in records)
+            foreach (var record in newRecords)
             {
                 record.CreatedAt = DateTime.UtcNow;
                 record.UpdatedAt = DateTime.UtcNow;
@@ -385,11 +403,11 @@ public class TransactionService
             }
 
             // 1. Bulk insert transactions
-            _context.Transactions.AddRange(records);
+            _context.Transactions.AddRange(newRecords);
             await _context.SaveChangesAsync();
 
             // 2. Batch update ledger balances
-            var ledgerGroups = records
+            var ledgerGroups = newRecords
                 .Where(r => r.LedgerId.HasValue)
                 .GroupBy(r => new { r.LedgerId, r.Type });
 
@@ -400,7 +418,7 @@ public class TransactionService
             }
 
             // 3. Single audit log for the whole operation
-            await _auditLog.LogAsync("Import", "Transaction", $"Bulk imported {records.Count} transactions via file.");
+            await _auditLog.LogAsync("Import", "Transaction", $"Bulk imported {newRecords.Count} transactions (Skipped {records.Count - newRecords.Count} duplicates) via file.");
 
             await dbTransaction.CommitAsync();
             return records.Count;

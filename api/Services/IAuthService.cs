@@ -8,4 +8,5 @@ public interface IAuthService
     Task<AuthResponse> LoginAsync(LoginRequest request);
     Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request);
     Task<bool> ActivateAccountAsync(ActivateRequest request);
+    Task<bool> SeedMasterAsync();
 }
