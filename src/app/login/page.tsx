@@ -44,7 +44,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const data = await api.post<any>("/Auth/login", values);
-      login(data.token);
+      login(data);
 
       toast({
         title: "Welcome back! 👋",

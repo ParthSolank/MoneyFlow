@@ -16,8 +16,8 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (token: string) => void;
-    register: (token: string) => void;
+    login: (userData: User) => void;
+    register: (userData: User) => void;
     logout: () => Promise<void>;
     companyId: number | null;
     setCompanyId: (id: number | null) => void;
@@ -67,17 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
     }, []);
 
-    const login = React.useCallback((token: string) => {
-        // Token is now stored in HttpOnly cookie by the backend
-        // Extract and set user info from JWT
-        const userData = getUserFromToken(token);
+    const login = React.useCallback((userData: User) => {
         setUser(userData);
     }, []);
 
-    const register = React.useCallback((token: string) => {
-        // Token is now stored in HttpOnly cookie by the backend
-        // Extract and set user info from JWT
-        const userData = getUserFromToken(token);
+    const register = React.useCallback((userData: User) => {
         setUser(userData);
     }, []);
 
