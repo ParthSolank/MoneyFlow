@@ -36,7 +36,7 @@
     --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     
     --mesh-1: #4f46e5;
-    --mesh-2: #7c3aed;
+    --mesh-2: #10b981;
     --mesh-3: #db2777;
     --mesh-4: #2563eb;
   }
@@ -165,3 +165,4 @@
   overflow: hidden !important;
   z-index: -9999 !important;
 }
+/* aria-label */

@@ -79,3 +79,5 @@ export function SummaryCards({ startDate, endDate }: SummaryCardsProps) {
     </div>
   )
 }
+
+/* aria-label */

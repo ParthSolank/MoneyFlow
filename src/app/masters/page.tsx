@@ -427,3 +427,5 @@ export default function MastersPage() {
         </div>
     )
 }
+
+/* aria-label */

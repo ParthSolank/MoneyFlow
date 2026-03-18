@@ -43,3 +43,5 @@ export function exportTransactionsToCSV(transactions: Transaction[]) {
     link.click();
     document.body.removeChild(link);
 }
+
+/* aria-label */

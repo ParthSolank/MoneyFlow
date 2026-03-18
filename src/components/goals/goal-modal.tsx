@@ -142,7 +142,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] rounded-2xl">
         <DialogHeader>
-          <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 mb-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-4">
             <Target className="w-6 h-6" />
           </div>
           <DialogTitle className="text-2xl font-bold">{isEdit ? "Edit Savings Goal" : "Add Savings Goal"}</DialogTitle>
@@ -160,7 +160,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
-              className="rounded-xl border-gray-100 focus:ring-purple-600 h-11"
+              className="rounded-xl border-gray-100 focus:ring-emerald-600 h-11"
             />
           </div>
 
@@ -170,7 +170,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
                 value={formData.ledgerId} 
                 onValueChange={(val) => setFormData({ ...formData, ledgerId: val })}
             >
-                <SelectTrigger className="rounded-xl border-gray-100 focus:ring-purple-600 h-11">
+                <SelectTrigger className="rounded-xl border-gray-100 focus:ring-emerald-600 h-11">
                     <SelectValue placeholder="Select an account" />
                 </SelectTrigger>
                 <SelectContent>
@@ -193,7 +193,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
                 value={formData.targetAmount}
                 onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
                 required
-                className="rounded-xl border-gray-100 focus:ring-purple-600 h-11"
+                className="rounded-xl border-gray-100 focus:ring-emerald-600 h-11"
               />
             </div>
             <div className="space-y-2">
@@ -204,7 +204,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
                 placeholder="0.00"
                 value={formData.currentAmount}
                 onChange={(e) => setFormData({ ...formData, currentAmount: e.target.value })}
-                className="rounded-xl border-gray-100 focus:ring-purple-600 h-11"
+                className="rounded-xl border-gray-100 focus:ring-emerald-600 h-11"
               />
             </div>
           </div>
@@ -217,7 +217,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
                 type="date"
                 value={formData.deadline}
                 onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                className="rounded-xl border-gray-100 focus:ring-purple-600 h-11"
+                className="rounded-xl border-gray-100 focus:ring-emerald-600 h-11"
               />
             </div>
             <div className="space-y-2">
@@ -227,7 +227,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
                 placeholder="e.g. Travel, Life"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="rounded-xl border-gray-100 focus:ring-purple-600 h-11"
+                className="rounded-xl border-gray-100 focus:ring-emerald-600 h-11"
               />
             </div>
           </div>
@@ -235,14 +235,14 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
           <div className="space-y-2">
             <Label htmlFor="color" className="text-sm font-bold uppercase tracking-wider text-gray-400">Theme Color</Label>
             <div className="flex gap-3">
-              {["#4f46e5", "#7c3aed", "#db2777", "#ea580c", "#16a34a", "#0891b2"].map((c) => (
+              {["#4f46e5", "#10b981", "#db2777", "#ea580c", "#16a34a", "#0891b2"].map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setFormData({ ...formData, color: c })}
                   className={cn(
                     "w-8 h-8 rounded-full transition-all ring-offset-2",
-                    formData.color === c ? "ring-2 ring-purple-600 scale-110" : "hover:scale-105"
+                    formData.color === c ? "ring-2 ring-emerald-600 scale-110" : "hover:scale-105"
                   )}
                   style={{ backgroundColor: c }}
                 />
@@ -262,7 +262,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-12 font-bold px-8 shadow-lg shadow-purple-100 flex-1 sm:flex-none"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold px-8 shadow-lg shadow-emerald-100 flex-1 sm:flex-none"
             >
               {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (isEdit ? "Update Goal" : "Create Goal")}
             </Button>

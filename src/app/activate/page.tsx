@@ -18,8 +18,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 const activateSchema = z.object({
     email: z.string().email({ message: "Invalid email address" }),
@@ -31,6 +32,8 @@ function ActivateForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
 
     const defaultEmail = searchParams.get("email") || "";
 
@@ -44,22 +47,29 @@ function ActivateForm() {
 
     async function onSubmit(values: z.infer<typeof activateSchema>) {
         setIsLoading(true);
+        setError(null);
         try {
             await api.post<{ message: string }>("/auth/activate", values);
 
+            setSuccess(true);
             toast({
                 title: "Account Activated! 🚀",
                 description: "You can now log in securely.",
                 className: "bg-green-50 border-green-200 text-green-900",
             });
 
-            router.push("/login");
+            // Redirect after a short delay so user sees success message
+            setTimeout(() => {
+                router.push("/login");
+            }, 1500);
 
         } catch (error: any) {
+            const errorMessage = error.message || "Invalid activation key. Please check and try again.";
+            setError(errorMessage);
             toast({
                 variant: "destructive",
                 title: "Activation failed",
-                description: error.message || "Invalid activation key.",
+                description: errorMessage,
             });
         } finally {
             setIsLoading(false);
@@ -81,8 +91,41 @@ function ActivateForm() {
         visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
     };
 
+    if (success) {
+        return (
+            <div className="flex min-h-screen sm:min-h-[100dvh] items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-emerald-50 px-4 py-8">
+                <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                    className="w-full max-w-md"
+                >
+                    <Card className="shadow-2xl border-0 overflow-hidden backdrop-blur-xl bg-white/80 relative z-10 ring-1 ring-gray-100">
+                        <CardHeader className="space-y-2 text-center pb-8 pt-8">
+                            <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                                className="bg-gradient-to-br from-green-500 to-emerald-600 w-16 h-16 mx-auto p-3.5 rounded-2xl shadow-lg mb-4 flex items-center justify-center"
+                            >
+                                <CheckCircle className="w-full h-full text-white" />
+                            </motion.div>
+                            <CardTitle className="text-3xl font-bold text-green-600">All Set!</CardTitle>
+                            <CardDescription className="text-base text-gray-500 mt-2">
+                                Your account has been activated successfully.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="text-center pb-8">
+                            <p className="text-gray-600">Redirecting you to login...</p>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            </div>
+        );
+    }
+
     return (
-        <div className="flex min-h-screen sm:min-h-[100dvh] items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 py-8 overflow-y-auto">
+        <div className="flex min-h-screen sm:min-h-[100dvh] items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-emerald-50 px-4 py-8 overflow-y-auto">
             <motion.div
                 initial="hidden"
                 animate="visible"
@@ -90,7 +133,7 @@ function ActivateForm() {
                 variants={containerVariants}
                 className="w-full max-w-md relative"
             >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-2xl blur-3xl opacity-20 transform scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-2xl blur-3xl opacity-20 transform scale-105" />
 
                 <Card className="shadow-2xl border-0 overflow-hidden backdrop-blur-xl bg-white/80 relative z-10 ring-1 ring-gray-100">
                     <CardHeader className="space-y-2 text-center pb-8 pt-8">
@@ -98,12 +141,12 @@ function ActivateForm() {
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                            className="bg-gradient-to-br from-indigo-500 to-purple-600 w-16 h-16 mx-auto p-3.5 rounded-2xl shadow-lg mb-4 flex items-center justify-center"
+                            className="bg-gradient-to-br from-indigo-500 to-emerald-600 w-16 h-16 mx-auto p-3.5 rounded-2xl shadow-lg mb-4 flex items-center justify-center"
                         >
                             <ShieldCheck className="w-full h-full text-white" />
                         </motion.div>
                         <motion.div variants={itemVariants}>
-                            <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">
+                            <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-emerald-600 tracking-tight">
                                 Account Activation
                             </CardTitle>
                             <CardDescription className="text-base text-gray-500 mt-2">
@@ -112,6 +155,21 @@ function ActivateForm() {
                         </motion.div>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg"
+                            >
+                                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-red-900">{error}</p>
+                                    <p className="text-xs text-red-700 mt-1">
+                                        Check your email for the correct activation key.
+                                    </p>
+                                </div>
+                            </motion.div>
+                        )}
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                 <motion.div variants={itemVariants} className="space-y-4">
@@ -127,6 +185,7 @@ function ActivateForm() {
                                                         placeholder="name@example.com"
                                                         className="h-11 bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all duration-200"
                                                         disabled={!!defaultEmail}
+                                                        aria-label="Email address for account activation"
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -146,6 +205,7 @@ function ActivateForm() {
                                                         placeholder="123456"
                                                         className="h-11 font-mono tracking-[0.5em] text-center text-xl bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all duration-200"
                                                         maxLength={6}
+                                                        aria-label="6-digit activation key"
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -155,11 +215,11 @@ function ActivateForm() {
                                     />
                                 </motion.div>
 
-                                <motion.div variants={itemVariants} className="pt-2">
+                                <motion.div variants={itemVariants} className="pt-2 space-y-3">
                                     <Button
                                         type="submit"
                                         disabled={isLoading}
-                                        className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium text-base shadow-md hover:shadow-lg transition-all duration-200"
+                                        className="w-full h-11 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white font-medium text-base shadow-md hover:shadow-lg transition-all duration-200"
                                     >
                                         {isLoading ? (
                                             <>
@@ -170,18 +230,30 @@ function ActivateForm() {
                                             "Activate Account"
                                         )}
                                     </Button>
+
+                                    <div className="text-center">
+                                        <p className="text-sm text-gray-600">
+                                            Didn't receive email?{" "}
+                                            <Link
+                                                href="/resend-verification"
+                                                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                                            >
+                                                Request new activation key
+                                            </Link>
+                                        </p>
+                                    </div>
                                 </motion.div>
                             </form>
                         </Form>
                     </CardContent>
-                    
+
                 </Card>
             </motion.div>
 
             {/* Floating Watermark */}
             <div className="fixed bottom-6 right-6 pointer-events-none z-50 opacity-20 hover:opacity-100 transition-opacity duration-500 hidden sm:block">
                 <div className="bg-white/40 shadow-sm backdrop-blur-[2px] border border-gray-200/50 px-3 py-1.5 rounded-full flex items-center gap-2 ring-1 ring-black/5">
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] text-white font-black shadow-sm">
+                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-600 flex items-center justify-center text-[8px] text-white font-black shadow-sm">
                         P
                     </div>
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] whitespace-nowrap">

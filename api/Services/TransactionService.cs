@@ -131,16 +131,16 @@ public class TransactionService
     // Get transactions by date range
     public async Task<List<Transaction>> GetByDateRangeAsync(string startDate, string endDate)
     {
-        // Validate date format
-        if (!DateTime.TryParseExact(startDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out _))
+        // Validate and parse date format
+        if (!DateTime.TryParseExact(startDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime parsedStartDate))
             throw new ArgumentException($"Invalid start date format: {startDate}. Use yyyy-MM-dd");
-        if (!DateTime.TryParseExact(endDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out _))
+        if (!DateTime.TryParseExact(endDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime parsedEndDate))
             throw new ArgumentException($"Invalid end date format: {endDate}. Use yyyy-MM-dd");
 
         return await GetBaseQuery()
             .Include(t => t.Ledger)
-            .Where(t => string.Compare(t.Date, startDate) >= 0 &&
-                       string.Compare(t.Date, endDate) <= 0)
+            .Where(t => t.Date.CompareTo(startDate) >= 0 &&
+                       t.Date.CompareTo(endDate) <= 0)
             .OrderByDescending(t => t.Date)
             .ToListAsync();
     }

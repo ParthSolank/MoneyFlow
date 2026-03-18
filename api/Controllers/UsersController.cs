@@ -33,7 +33,7 @@ public class UsersController : ControllerBase
                 Email = u.Email,
                 Role = u.Role,
                 Rights = u.Rights,
-                Status = "Active", // Mocking status since there isn't a status field
+                Status = u.IsActive ? "Active" : "Inactive",
                 Joined = u.CreatedAt
             })
             .ToListAsync();
@@ -43,6 +43,12 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<UserAdminDto>> CreateUser(CreateUserRequest request)
     {
+        // HIGH FIX #6: Whitelist allowed roles — without this, caller can pass Role="Admin"
+        // to create unlimited Admin accounts.
+        var allowedRoles = new[] { "User", "Manager" };
+        if (!allowedRoles.Contains(request.Role))
+            return BadRequest(new { message = $"Invalid role. Allowed values: {string.Join(", ", allowedRoles)}" });
+
         if (await _context.Users.AnyAsync(u => u.Email == request.Email || u.Username == request.Username))
         {
             return BadRequest("Username or Email already exists.");
@@ -54,6 +60,9 @@ public class UsersController : ControllerBase
             Email = request.Email,
             Role = request.Role,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            // HIGH FIX #7: Admin-created users are pre-approved — no activation flow needed.
+            // Without this flag, users are stuck inactive with no way to activate.
+            IsActive = true,
             Rights = new List<string> { "CORE_TRANSACTIONS_VIEW", "CORE_LEDGERS_VIEW" },
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -70,7 +79,7 @@ public class UsersController : ControllerBase
             Email = user.Email,
             Role = user.Role,
             Rights = user.Rights,
-            Status = "Active",
+            Status = user.IsActive ? "Active" : "Inactive",
             Joined = user.CreatedAt
         };
 

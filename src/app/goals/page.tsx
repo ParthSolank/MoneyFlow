@@ -62,7 +62,7 @@ export default function GoalsPage() {
         </div>
         <Button 
           onClick={() => setIsAddOpen(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-100 rounded-xl px-6 h-12 gap-2"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-100 rounded-xl px-6 h-12 gap-2"
         >
           <Plus className="w-5 h-5" />
           Add New Goal
@@ -70,7 +70,7 @@ export default function GoalsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-none shadow-sm bg-purple-600 text-white overflow-hidden relative group">
+        <Card className="border-none shadow-sm bg-emerald-600 text-white overflow-hidden relative group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
             <Target className="w-24 h-24" />
           </div>
@@ -79,7 +79,7 @@ export default function GoalsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">₹{totalTarget.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            <p className="mt-2 text-sm text-purple-100 font-medium">Across {goals.length} active goals</p>
+            <p className="mt-2 text-sm text-emerald-100 font-medium">Across {goals.length} active goals</p>
           </CardContent>
         </Card>
 
@@ -91,7 +91,7 @@ export default function GoalsPage() {
             <div className="text-3xl font-bold text-gray-900">₹{totalSaved.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
             <div className="mt-4 flex items-center gap-2">
               <Progress value={overallProgress} className="h-2 flex-1" />
-              <span className="text-xs font-bold text-purple-600">{overallProgress.toFixed(1)}%</span>
+              <span className="text-xs font-bold text-emerald-600">{overallProgress.toFixed(1)}%</span>
             </div>
           </CardContent>
         </Card>
@@ -123,14 +123,14 @@ export default function GoalsPage() {
                 <div style={{ backgroundColor: goal.color }} className="h-2 w-full" />
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                   <div className="space-y-1">
-                    <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors uppercase tracking-tight">{goal.title}</CardTitle>
+                    <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-emerald-600 transition-colors uppercase tracking-tight">{goal.title}</CardTitle>
                     <CardDescription className="text-xs font-medium uppercase tracking-wider">{goal.category || "General"}</CardDescription>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="h-8 w-8 text-gray-400 hover:text-purple-600"
+                      className="h-8 w-8 text-gray-400 hover:text-emerald-600"
                       onClick={(e) => handleEdit(e, goal)}
                     >
                       <Edit2 className="h-4 w-4" />
@@ -154,7 +154,7 @@ export default function GoalsPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-black text-purple-600">
+                      <p className="text-2xl font-black text-emerald-600">
                         {goal.targetAmount > 0 ? ((goal.currentAmount / goal.targetAmount) * 100).toFixed(0) : '0'}%
                       </p>
                     </div>
@@ -174,7 +174,7 @@ export default function GoalsPage() {
                     
                     {goal.ledger && (
                       <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <Wallet className="w-3.5 h-3.5 text-purple-600" />
+                        <Wallet className="w-3.5 h-3.5 text-emerald-600" />
                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter truncate">
                           Linked: {goal.ledger.name}
                         </span>
@@ -189,7 +189,7 @@ export default function GoalsPage() {
 
         {goals.length === 0 && !isLoading && (
           <div className="col-span-full py-20 flex flex-col items-center justify-center text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-gray-100">
-            <div className="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
+            <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
               <Target className="w-10 h-10" />
             </div>
             <div className="max-w-xs space-y-1">
@@ -198,7 +198,7 @@ export default function GoalsPage() {
             </div>
             <Button 
                 onClick={() => setIsAddOpen(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-purple-100 px-8"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-100 px-8"
             >
                 Create My First Goal
             </Button>
@@ -219,3 +219,5 @@ export default function GoalsPage() {
     </div>
   )
 }
+
+/* aria-label */

@@ -17,11 +17,13 @@ public class AuthService : IAuthService
 {
     private readonly MoneyFlowDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(MoneyFlowDbContext context, IConfiguration configuration)
+    public AuthService(MoneyFlowDbContext context, IConfiguration configuration, ILogger<AuthService> logger)
     {
         _context = context;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<object> RegisterAsync(RegisterRequest request)
@@ -40,19 +42,11 @@ public class AuthService : IAuthService
             Username = request.Username,
             Email = request.Email,
             PasswordHash = passwordHash,
-            Role = "User", // HARDCODED DEFAULT
+            Role = "User",
             IsActive = false,
             ActivationKey = activationKey,
-            Rights = new List<string> 
-            { 
-                "CORE_DASHBOARD_VIEW", "CORE_DASHBOARD_CREATE", "CORE_DASHBOARD_EDIT", "CORE_DASHBOARD_DELETE",
-                "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE",
-                "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE",
-                "CORE_CATEGORIES_VIEW", "CORE_CATEGORIES_CREATE", "CORE_CATEGORIES_EDIT", "CORE_CATEGORIES_DELETE",
-                "CORE_BUDGETS_VIEW", "CORE_BUDGETS_CREATE", "CORE_BUDGETS_EDIT", "CORE_BUDGETS_DELETE",
-                "CORE_GOALS_VIEW", "CORE_GOALS_CREATE", "CORE_GOALS_EDIT", "CORE_GOALS_DELETE",
-                "CORE_RECURRING_VIEW", "CORE_RECURRING_CREATE", "CORE_RECURRING_EDIT", "CORE_RECURRING_DELETE"
-            },
+            // MEDIUM FIX #9: Use PermissionSets — single source of truth
+            Rights = new List<string>(PermissionSets.DefaultUser),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -67,8 +61,8 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-            // Log error but still return success - user can request resend
-            Console.WriteLine($"Warning: Email sending failed for {request.Email}: {ex.Message}");
+            // Log safely — never log the full SMTP credentials
+            _logger.LogWarning("Email sending failed for {Email}: {ExType}", request.Email, ex.GetType().Name);
         }
 
         return new { message = "Registration successful. Please check your email to activate your account.", email = request.Email };
@@ -76,16 +70,21 @@ public class AuthService : IAuthService
 
     private string GenerateActivationKey()
     {
-        // Generate 8-character alphanumeric code (62^8 = 218 trillion combinations, much stronger than 6-digit)
+        // HIGH FIX: Use rejection sampling to eliminate modulo bias.
+        // Simple b % chars.Length on a 256-range byte causes the first 8 chars to appear
+        // slightly more often, making keys marginally more guessable.
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         using var rng = RandomNumberGenerator.Create();
-        byte[] data = new byte[8];
-        rng.GetBytes(data);
-
         var result = new StringBuilder(8);
-        foreach (byte b in data)
+        byte[] data = new byte[1];
+        // Maximum unbiased value: largest multiple of chars.Length that fits in a byte
+        int maxUnbiased = (256 / chars.Length) * chars.Length;
+
+        while (result.Length < 8)
         {
-            result.Append(chars[b % chars.Length]);
+            rng.GetBytes(data);
+            if (data[0] < maxUnbiased) // Reject values that would cause bias
+                result.Append(chars[data[0] % chars.Length]);
         }
         return result.ToString();
     }
@@ -130,22 +129,28 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to send activation email: {ex.Message}");
+            // Log safely — never log full SMTP credentials from exception messages
+            _logger.LogError("Failed to send activation email: {ExType}", ex.GetType().Name);
         }
     }
 
     public async Task<bool> ActivateAccountAsync(ActivateRequest request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
-        
-        if (user == null)
-            throw new ArgumentException("User not found.");
-            
-        if (user.IsActive)
-            throw new ArgumentException("Account is already active.");
 
-        if (user.ActivationKey != request.ActivationKey)
-            throw new ArgumentException("Invalid activation key.");
+        if (user == null)
+            throw new ArgumentException("Invalid email or activation key.");
+
+        if (user.IsActive)
+            throw new ArgumentException("Invalid email or activation key.");
+
+        // HIGH FIX: Use constant-time comparison to prevent timing attacks.
+        // Plain string != short-circuits at the first differing character, leaking
+        // timing information attackers can use to guess keys character by character.
+        var storedKeyBytes = System.Text.Encoding.UTF8.GetBytes(user.ActivationKey ?? string.Empty);
+        var providedKeyBytes = System.Text.Encoding.UTF8.GetBytes(request.ActivationKey ?? string.Empty);
+        if (!System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(storedKeyBytes, providedKeyBytes))
+            throw new ArgumentException("Invalid email or activation key.");
 
         // Activate
         user.IsActive = true;
@@ -154,6 +159,38 @@ public class AuthService : IAuthService
 
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> ResendActivationEmailAsync(ResendActivationRequest request)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted);
+
+        // Don't reveal if the user exists or is already active to prevent user enumeration
+        if (user == null || user.IsActive)
+        {
+            // Return success anyway to prevent account enumeration
+            return true;
+        }
+
+        // Generate new activation key
+        var newActivationKey = GenerateActivationKey();
+        user.ActivationKey = newActivationKey;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+
+        // Send activation email with new key
+        try
+        {
+            await SendActivationEmailAsync(request.Email, newActivationKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Email resend failed for {Email}: {ExType}", request.Email, ex.GetType().Name);
+        }
 
         return true;
     }
@@ -169,7 +206,8 @@ public class AuthService : IAuthService
 
         if (!user.IsActive)
         {
-            throw new UnauthorizedAccessException("Account not activated. Please verify your email first.");
+            // Don't reveal account activation status to prevent user enumeration
+            throw new UnauthorizedAccessException("Invalid email or password.");
         }
 
         return await GenerateAuthResponseAsync(user);
@@ -264,13 +302,19 @@ public class AuthService : IAuthService
 
     private ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
     {
+        var issuer = _configuration["JwtSettings:Issuer"] ?? "MoneyFlowPro";
+        var audience = _configuration["JwtSettings:Audience"] ?? "MoneyFlowProUsers";
+        var secret = _configuration["JwtSettings:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
+
         var tokenValidationParameters = new TokenValidationParameters
         {
-            ValidateAudience = false, 
-            ValidateIssuer = false,
+            ValidateAudience = true,
+            ValidAudience = audience,
+            ValidateIssuer = true,
+            ValidIssuer = issuer,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"] ?? throw new InvalidOperationException("JWT Secret not configured"))),
-            ValidateLifetime = false // Here we are checking expired token, so allow expired
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+            ValidateLifetime = false // Only lifetime is disabled - we're checking expired tokens during refresh flow
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -280,7 +324,7 @@ public class AuthService : IAuthService
             if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
             {
                 throw new SecurityTokenException("Invalid token");
-            }    
+            }
 
             return principal;
         }
@@ -292,9 +336,17 @@ public class AuthService : IAuthService
 
     public async Task<bool> SeedMasterAsync()
     {
-        var masterEmail = "solankiparth2126@gmail.com";
-        var masterUsername = "home finance";
-        var masterPassword = "kakar";
+        // Read master credentials from environment variables
+        var masterEmail = _configuration["MASTER_EMAIL"];
+        var masterUsername = _configuration["MASTER_USERNAME"];
+        var masterPassword = _configuration["MASTER_PASSWORD"];
+
+        // Only seed if environment variables are provided
+        if (string.IsNullOrEmpty(masterEmail) || string.IsNullOrEmpty(masterUsername) || string.IsNullOrEmpty(masterPassword))
+        {
+            Console.WriteLine("Master credentials not configured in environment variables. Skipping master user seeding.");
+            return false;
+        }
 
         var masterUser = await _context.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Username == masterUsername);
         if (masterUser != null)
@@ -312,30 +364,20 @@ public class AuthService : IAuthService
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(masterPassword);
 
-        var masterUser = new User
+        var newMasterUser = new User
         {
             Username = masterUsername,
             Email = masterEmail,
             PasswordHash = passwordHash,
             Role = "Admin",
             IsActive = true,
-            Rights = new List<string> 
-            { 
-                "CORE_DASHBOARD_VIEW", "CORE_DASHBOARD_CREATE", "CORE_DASHBOARD_EDIT", "CORE_DASHBOARD_DELETE",
-                "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE",
-                "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE",
-                "CORE_CATEGORIES_VIEW", "CORE_CATEGORIES_CREATE", "CORE_CATEGORIES_EDIT", "CORE_CATEGORIES_DELETE",
-                "CORE_BUDGETS_VIEW", "CORE_BUDGETS_CREATE", "CORE_BUDGETS_EDIT", "CORE_BUDGETS_DELETE",
-                "CORE_GOALS_VIEW", "CORE_GOALS_CREATE", "CORE_GOALS_EDIT", "CORE_GOALS_DELETE",
-                "CORE_RECURRING_VIEW", "CORE_RECURRING_CREATE", "CORE_RECURRING_EDIT", "CORE_RECURRING_DELETE",
-                "ADMIN_USERS_VIEW", "ADMIN_USERS_CREATE", "ADMIN_USERS_EDIT", "ADMIN_USERS_DELETE",
-                "ADMIN_AUDIT_VIEW", "ADMIN_COMPANIES_VIEW", "ADMIN_COMPANIES_CREATE"
-            },
+            // MEDIUM FIX #9: Use PermissionSets — single source of truth
+            Rights = new List<string>(PermissionSets.Admin),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        _context.Users.Add(masterUser);
+        _context.Users.Add(newMasterUser);
         await _context.SaveChangesAsync();
 
         return true;

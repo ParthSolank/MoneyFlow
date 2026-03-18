@@ -1,7 +1,7 @@
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 export const API_BASE_URL = (BASE_URL.toLowerCase().endsWith('/api') || BASE_URL.toLowerCase().includes('/api/'))
     ? BASE_URL.replace(/\/$/, '')
-    : `/api/api`; 
+    : `/api`; 
 
 console.log(`[API] Base URL: ${BASE_URL || '(relative)'}`);
 console.log(`[API] API Base URL: ${API_BASE_URL}`);
@@ -50,7 +50,7 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
         if (response.status === 401 && !isServer) {
             // Don't intercept 401s on auth routes, let the component handle the specific active/unauthorized message
             const lowerUrl = url.toLowerCase();
-            if (lowerUrl.includes('/auth/login') || lowerUrl.includes('/auth/register') || lowerUrl.includes('/auth/activate')) {
+            if (lowerUrl.includes('/auth/login') || lowerUrl.includes('/auth/register') || lowerUrl.includes('/auth/activate') || lowerUrl.includes('/auth/resend-activation-email')) {
                 return response;
             }
 

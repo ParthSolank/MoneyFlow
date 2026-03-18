@@ -325,7 +325,7 @@ export default function TransactionsPage() {
       className="space-y-8 p-1 pb-24"
     >
       <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-600/20 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
+        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-emerald-600/20 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
         <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white/70 backdrop-blur-2xl p-8 rounded-3xl ring-1 ring-gray-200/50 shadow-2xl dark:bg-gray-950/70 dark:ring-gray-800">
           <div className="space-y-2">
             <div className="flex items-center gap-4">
@@ -738,7 +738,7 @@ export default function TransactionsPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {tx.paymentMethod === 'bank' && <Wallet className="h-3 w-3 text-blue-500" />}
-                          {tx.paymentMethod === 'credit' && <CreditCard className="h-3 w-3 text-purple-500" />}
+                          {tx.paymentMethod === 'credit' && <CreditCard className="h-3 w-3 text-emerald-500" />}
                           {tx.paymentMethod === 'cash' && <Banknote className="h-3 w-3 text-green-500" />}
                           <span className="capitalize text-sm">{tx.paymentMethod}</span>
                         </div>

@@ -21,14 +21,15 @@ public class GoalsController : ControllerBase
     }
 
     [HttpGet]
-    [AuthorizeRight("view_goals")]
+    // CRITICAL FIX #3: Was "view_goals" — must match CORE_GOALS_VIEW convention
+    [AuthorizeRight("CORE_GOALS_VIEW")]
     public async Task<ActionResult<List<Goal>>> GetAll()
     {
         return Ok(await _goalService.GetAllAsync());
     }
 
     [HttpGet("{id:int}")]
-    [AuthorizeRight("view_goals")]
+    [AuthorizeRight("CORE_GOALS_VIEW")]
     public async Task<ActionResult<Goal>> GetById(int id)
     {
         var goal = await _goalService.GetByIdAsync(id);
@@ -37,9 +38,9 @@ public class GoalsController : ControllerBase
     }
 
     [HttpPost]
+    [AuthorizeRight("CORE_GOALS_CREATE")]
     public async Task<ActionResult<Goal>> Create(Goal goal)
     {
-        // Validate deadline is in the future
         if (goal.Deadline.HasValue && goal.Deadline.Value <= DateTime.UtcNow)
             return BadRequest(new { message = "Deadline must be in the future" });
 
@@ -49,10 +50,9 @@ public class GoalsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [AuthorizeRight("edit_goals")]
+    [AuthorizeRight("CORE_GOALS_EDIT")]
     public async Task<IActionResult> Update(int id, Goal goal)
     {
-        // Validate deadline is in the future
         if (goal.Deadline.HasValue && goal.Deadline.Value <= DateTime.UtcNow)
             return BadRequest(new { message = "Deadline must be in the future" });
 
@@ -63,7 +63,7 @@ public class GoalsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [AuthorizeRight("delete_goals")]
+    [AuthorizeRight("CORE_GOALS_DELETE")]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _goalService.DeleteAsync(id);
@@ -73,12 +73,14 @@ public class GoalsController : ControllerBase
     }
 
     [HttpGet("{id:int}/history")]
+    [AuthorizeRight("CORE_GOALS_VIEW")]
     public async Task<ActionResult<List<GoalContribution>>> GetHistory(int id)
     {
         return Ok(await _goalService.GetHistoryAsync(id));
     }
 
     [HttpPost("{id:int}/contributions")]
+    [AuthorizeRight("CORE_GOALS_CREATE")]
     public async Task<ActionResult<GoalContribution>> AddContribution(int id, [FromBody] ContributionRequest request)
     {
         var contribution = await _goalService.AddContributionAsync(id, request.Amount, request.LedgerId, request.Notes);

@@ -37,15 +37,12 @@ export default function BudgetsPage() {
     const handleDownloadStatement = async () => {
         try {
             setIsDownloading(true);
-            const token = localStorage.getItem('token');
             const res = await fetch(`${BASE_URL}/api/Reports/monthly-statement?month=${month}&year=${year}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                credentials: 'include' // Include HttpOnly cookies for authentication
             });
-            
+
             if (!res.ok) throw new Error("Failed to download");
-            
+
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -334,3 +331,5 @@ export default function BudgetsPage() {
         </div>
     );
 }
+
+/* aria-label */

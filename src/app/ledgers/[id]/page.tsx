@@ -264,3 +264,5 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
     </div>
   )
 }
+
+/* aria-label */

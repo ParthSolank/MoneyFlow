@@ -16,7 +16,8 @@ export function useTransactions(startDate?: string, endDate?: string, page: numb
     queryParams.append('page', page.toString());
     queryParams.append('pageSize', pageSize.toString());
 
-    const cacheKey = { url: 'api/transactions', start: startDate, end: endDate, page, pageSize };
+    // Use a properly serialized cache key string instead of object literal
+    const cacheKey = `api/transactions_${startDate || 'all'}_${endDate || 'all'}_${page}_${pageSize}`;
 
     const { data, error, isLoading, mutate } = useSWR(
         cacheKey,
@@ -25,7 +26,7 @@ export function useTransactions(startDate?: string, endDate?: string, page: numb
                 // Currently getByDateRange doesn't use pagination in the backend, but we pass it anyway for consistency
                 return transactionApi.getByDateRange(startDate, endDate);
             }
-            // For standard getAll, we should pass pagination if we update the API client, 
+            // For standard getAll, we should pass pagination if we update the API client,
             // but for now the SWR key change will force re-fetch and the API uses query params
             return api.get(`/Transactions?page=${page}&pageSize=${pageSize}`);
         },

@@ -94,7 +94,7 @@ public class GoalService
             var goal = await _context.Goals
                 .Where(g => !g.IsDeleted && g.Id == goalId && g.CompanyId == _userContext.CompanyId)
                 .FirstOrDefaultAsync();
-            if (goal == null) throw new Exception("Goal not found");
+            if (goal == null) throw new InvalidOperationException("Goal not found");
 
             var contribution = new GoalContribution
             {

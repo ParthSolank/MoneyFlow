@@ -53,15 +53,42 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("resend-activation-email")]
+    public async Task<IActionResult> ResendActivationEmail(ResendActivationRequest request)
+    {
+        try
+        {
+            await _authService.ResendActivationEmailAsync(request);
+            return Ok(new { message = "Check your email for the activation link." });
+        }
+        catch (Exception ex)
+        {
+            // Log the original error but return a safe generic message
+            Console.Error.WriteLine($"[ResendActivation] Error: {ex.Message}");
+            return StatusCode(500, new { message = "An error occurred while sending the email." });
+        }
+    }
+
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
+    public async Task<ActionResult<object>> Login(LoginRequest request)
     {
         try
         {
             var response = await _authService.LoginAsync(request);
             SetAccessTokenCookie(response.Token);
             SetRefreshTokenCookie(response.RefreshToken);
-            return Ok(response);
+            // SECURITY FIX: Never return the raw JWT token in the response body.
+            // It is already secured inside an HttpOnly cookie. Returning it here
+            // would expose it to XSS attacks that read the response body.
+            return Ok(new
+            {
+                response.UserId,
+                response.Username,
+                response.Email,
+                response.Role,
+                response.Rights,
+                response.CompanyId
+            });
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -70,7 +97,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<AuthResponse>> RefreshToken(RefreshTokenRequest? request)
+    public async Task<ActionResult<object>> RefreshToken(RefreshTokenRequest? request)
     {
         try
         {
@@ -88,7 +115,16 @@ public class AuthController : ControllerBase
 
             SetAccessTokenCookie(response.Token);
             SetRefreshTokenCookie(response.RefreshToken);
-            return Ok(response);
+            // SECURITY FIX: Return only metadata, not the raw token
+            return Ok(new
+            {
+                response.UserId,
+                response.Username,
+                response.Email,
+                response.Role,
+                response.Rights,
+                response.CompanyId
+            });
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -100,6 +136,35 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpGet("me")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    public IActionResult Me()
+    {
+        // Returns authenticated user info decoded from the HttpOnly cookie JWT.
+        // This is used by the frontend to hydrate user state on page refresh.
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("nameid")?.Value
+            ?? User.FindFirst("sub")?.Value;
+        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
+            ?? User.FindFirst("unique_name")?.Value;
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            ?? User.FindFirst("email")?.Value;
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+            ?? User.FindFirst("role")?.Value;
+        var rights = User.FindAll("Right").Select(c => c.Value).ToList();
+
+        if (userId == null) return Unauthorized();
+
+        return Ok(new
+        {
+            Id = int.TryParse(userId, out var id) ? id : 0,
+            Username = username ?? "User",
+            Email = email ?? "",
+            Role = role ?? "User",
+            Rights = rights
+        });
+    }
+
     [HttpPost("logout")]
     public IActionResult Logout()
     {
@@ -108,7 +173,10 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully" });
     }
 
+    // SECURITY FIX: Restricted to Admin role only.
+    // This endpoint creates a master account and must NEVER be publicly accessible.
     [HttpGet("seed-master")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
     public async Task<IActionResult> SeedMaster()
     {
         try

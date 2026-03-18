@@ -126,6 +126,15 @@ public class TransactionsController : ControllerBase
         if (string.IsNullOrEmpty(start) || string.IsNullOrEmpty(end))
             return BadRequest(new { message = "Both start and end dates are required" });
 
+        // MEDIUM FIX #11: Validate date format before passing to the service.
+        // Malformed strings (e.g. "not-a-date") reach the DB layer and cause
+        // unhandled exceptions that leak stack traces in error responses.
+        if (!DateTime.TryParse(start, out var startDate) || !DateTime.TryParse(end, out var endDate))
+            return BadRequest(new { message = "Invalid date format. Use YYYY-MM-DD." });
+
+        if (startDate > endDate)
+            return BadRequest(new { message = "Start date must be before or equal to end date." });
+
         var transactions = await _transactionService.GetByDateRangeAsync(start, end);
         return Ok(transactions);
     }
@@ -234,11 +243,22 @@ public class TransactionsController : ControllerBase
         if (file.Length > MaxFileSize)
             return BadRequest(new { message = $"File size exceeds maximum allowed ({MaxFileSize / 1024 / 1024}MB)." });
 
-        // Validate MIME type and extension
+        // Validate MIME type AND extension — extension alone can be spoofed by renaming files
         var extension = Path.GetExtension(file.FileName).ToLower();
         var allowedExtensions = new[] { ".csv", ".xlsx" };
         if (!allowedExtensions.Contains(extension))
             return BadRequest(new { message = "Invalid file type. Allowed: CSV (.csv), Excel (.xlsx)" });
+
+        // HIGH FIX #8: Validate actual Content-Type header in addition to extension
+        var allowedMimeTypes = new[]
+        {
+            "text/csv",
+            "application/csv",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/octet-stream" // Fallback some browsers send for .xlsx
+        };
+        if (!allowedMimeTypes.Contains(file.ContentType.ToLower()))
+            return BadRequest(new { message = "Invalid file content type. Upload a valid CSV or Excel file." });
 
         try
         {

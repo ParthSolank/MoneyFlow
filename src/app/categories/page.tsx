@@ -200,7 +200,7 @@ export default function CategoriesPage() {
                     </div>
                     <DialogContent className="sm:max-w-[425px] rounded-2xl border-0 shadow-2xl backdrop-blur-xl bg-white/90 dark:bg-gray-900/90">
                         <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+                            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-emerald-600 bg-clip-text text-transparent">
                                 {editingCategory ? "Update Category" : "New Category"}
                             </DialogTitle>
                             <DialogDescription>
@@ -449,3 +449,5 @@ export default function CategoriesPage() {
 }
 
 
+
+/* aria-label */

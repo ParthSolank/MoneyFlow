@@ -402,6 +402,10 @@ namespace MoneyFlowApi.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("InitialBalance")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -547,6 +551,9 @@ namespace MoneyFlowApi.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("RecurringTransactionId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Type")
                         .IsRequired()

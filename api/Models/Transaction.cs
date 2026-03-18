@@ -44,6 +44,10 @@ public class Transaction
     [ForeignKey("LedgerId")]
     public Ledger? Ledger { get; set; }
 
+    // CRITICAL FIX: Tracks which recurring rule created this transaction.
+    // Replaces the previous dangerous fuzzy description+amount matching.
+    public int? RecurringTransactionId { get; set; }
+
     public int? CompanyId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

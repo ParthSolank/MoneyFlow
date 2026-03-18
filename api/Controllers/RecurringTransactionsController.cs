@@ -28,16 +28,34 @@ public class RecurringTransactionsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<RecurringTransaction>>> GetAll()
     {
-        return await _context.RecurringTransactions.Include(rt => rt.Ledger).ToListAsync();
+        // SECURITY FIX #2: Filter by company — users should only see their own data
+        var query = _context.RecurringTransactions
+            .Where(rt => !rt.IsDeleted)
+            .Include(rt => rt.Ledger)
+            .AsQueryable();
+
+        if (_userContext.Role != "Admin")
+            query = query.Where(rt => rt.CompanyId == _userContext.CompanyId);
+
+        return Ok(await query.ToListAsync());
     }
 
     [AuthorizeRight("CORE_RECURRING_VIEW")]
     [HttpGet("{id:int}")]
     public async Task<ActionResult<RecurringTransaction>> GetById(int id)
     {
-        var rt = await _context.RecurringTransactions.Include(rt => rt.Ledger).FirstOrDefaultAsync(x => x.Id == id);
+        // SECURITY FIX #2: Scope read to current company
+        var query = _context.RecurringTransactions
+            .Where(rt => rt.Id == id && !rt.IsDeleted)
+            .Include(rt => rt.Ledger)
+            .AsQueryable();
+
+        if (_userContext.Role != "Admin")
+            query = query.Where(rt => rt.CompanyId == _userContext.CompanyId);
+
+        var rt = await query.FirstOrDefaultAsync();
         if (rt == null) return NotFound();
-        return rt;
+        return Ok(rt);
     }
 
     [AuthorizeRight("CORE_RECURRING_CREATE")]
@@ -47,12 +65,9 @@ public class RecurringTransactionsController : ControllerBase
         rt.CreatedAt = DateTime.UtcNow;
         rt.UpdatedAt = DateTime.UtcNow;
         rt.CompanyId = _userContext.CompanyId;
-        
-        // Initial NextRunDate logic
+
         if (rt.NextRunDate == default)
-        {
             rt.NextRunDate = DateTime.UtcNow;
-        }
 
         _context.RecurringTransactions.Add(rt);
         await _context.SaveChangesAsync();
@@ -65,7 +80,8 @@ public class RecurringTransactionsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, RecurringTransaction rt)
     {
-        var existing = await _context.RecurringTransactions.FindAsync(id);
+        var existing = await _context.RecurringTransactions
+            .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted && r.CompanyId == _userContext.CompanyId);
         if (existing == null) return NotFound();
 
         existing.Description = rt.Description;
@@ -88,29 +104,25 @@ public class RecurringTransactionsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var rt = await _context.RecurringTransactions.FindAsync(id);
+        var rt = await _context.RecurringTransactions
+            .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted && r.CompanyId == _userContext.CompanyId);
         if (rt == null) return NotFound();
 
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        using var dbTransaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // Find all transactions created by this recurring rule that haven't been manually deleted
+            // CRITICAL FIX #1: Use RecurringTransactionId FK for precise lookup.
+            // The old approach used fuzzy description+amount matching which could
+            // accidentally soft-delete and reverse completely unrelated transactions.
             var createdTransactions = await _context.Transactions
-                .Where(t => t.Description.Contains(rt.Description) &&
-                           t.CompanyId == rt.CompanyId &&
-                           t.LedgerId == rt.LedgerId &&
-                           t.Amount == rt.Amount &&
-                           !t.IsDeleted)
+                .Where(t => t.RecurringTransactionId == rt.Id && !t.IsDeleted)
                 .ToListAsync();
 
-            // Reverse each transaction on the ledger
             foreach (var txn in createdTransactions)
             {
-                // Soft delete the transaction
                 txn.IsDeleted = true;
                 _context.Transactions.Update(txn);
 
-                // Reverse the ledger balance impact
                 decimal reversal = txn.Type == "income" ? -txn.Amount : txn.Amount;
                 await _context.Ledgers
                     .Where(l => l.Id == txn.LedgerId)
@@ -119,21 +131,20 @@ public class RecurringTransactionsController : ControllerBase
                         .SetProperty(l => l.UpdatedAt, DateTime.UtcNow));
             }
 
-            // Mark recurring transaction as deleted
             rt.IsDeleted = true;
             rt.UpdatedAt = DateTime.UtcNow;
             _context.RecurringTransactions.Update(rt);
 
             await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await dbTransaction.CommitAsync();
 
             await _auditLogService.LogAsync("DELETE", "Recurring",
-                $"Stopped/Deleted recurring ID {id} and reversed {createdTransactions.Count} created transactions");
+                $"Stopped recurring ID {id} and reversed {createdTransactions.Count} transactions");
             return NoContent();
         }
         catch
         {
-            await transaction.RollbackAsync();
+            await dbTransaction.RollbackAsync();
             throw;
         }
     }
