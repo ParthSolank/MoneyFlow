@@ -55,15 +55,13 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
             }
 
             try {
-                const oldToken = localStorage.getItem('token');
                 const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        ...(oldToken && { Authorization: `Bearer ${oldToken}` }),
                     },
                     credentials: 'include',
-                    body: JSON.stringify({ token: oldToken }),
+                    body: JSON.stringify({}),
                 });
 
                 if (refreshResponse.ok) {
