@@ -62,9 +62,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setCompanyIdState(parseInt(storedCompanyId, 10));
         }
 
-        // User info is decoded from JWT which is now in HttpOnly cookie
-        // No need to retrieve from localStorage
-        setLoading(false);
+        // Fetch current user from backend using the HttpOnly cookie session
+        const restoreSession = async () => {
+            try {
+                const userData = await api.get<User>('/auth/me');
+                if (userData && userData.id) {
+                    setUser(userData);
+                }
+            } catch (error) {
+                // If not logged in, user state remains null. This is fine.
+                console.log('Restoration failed: No active session');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        restoreSession();
     }, []);
 
     const login = React.useCallback((userData: User) => {
