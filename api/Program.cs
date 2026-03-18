@@ -87,7 +87,11 @@ builder.Services.AddCors(options =>
         var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? (builder.Environment.IsDevelopment() ? "http://localhost:3000" : "https://moneyflow-live.vercel.app");
         var origins = frontendUrl.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
-        policy.WithOrigins(origins)
+        policy.SetIsOriginAllowed(origin => 
+              {
+                  var host = new Uri(origin).Host;
+                  return host == "localhost" || host == "127.0.0.1" || host.EndsWith(".vercel.app") || host == "moneyflow-live.vercel.app";
+              })
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -177,7 +181,7 @@ app.MapGet("/health", () => Results.Ok(new
 }));
 
 Console.WriteLine("🚀 MoneyFlow Pro API is starting...");
-Console.WriteLine("📊 Swagger UI available at: http://127.0.0.1:5039 or https://localhost:7228");
+Console.WriteLine("📊 Swagger UI available at: http://moneyflowapi.runasp.net");
 Console.WriteLine("💡 Run 'dotnet ef database update' to create/update the database");
 
 // Seed Database with initial user
