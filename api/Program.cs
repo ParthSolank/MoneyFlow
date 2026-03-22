@@ -203,7 +203,11 @@ using (var scope = app.Services.CreateScope())
         context.Database.Migrate(); 
 
 
-        // Simplified Core Rights List for Admin
+        // Use environment variables for admin credentials with fallbacks
+        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@demo.com";
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "password123";
+
+        // Full Core Rights List for Admin
         var adminRights = new List<string> 
         { 
             "CORE_DASHBOARD_VIEW", "CORE_DASHBOARD_CREATE", "CORE_DASHBOARD_EDIT", "CORE_DASHBOARD_DELETE",
@@ -215,34 +219,35 @@ using (var scope = app.Services.CreateScope())
             "CORE_RECURRING_VIEW", "CORE_RECURRING_CREATE", "CORE_RECURRING_EDIT", "CORE_RECURRING_DELETE"
         };
 
-        var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@demo.com");
+        var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == adminEmail);
         
         if (adminUser == null)
         {
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword("password123");
             context.Users.Add(new User
             {
                 Username = "admin",
-                Email = "admin@demo.com",
-                PasswordHash = passwordHash,
+                Email = adminEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
                 Role = "Admin",
-                IsActive = true, // Ensure seeded user is active
+                IsActive = true,
                 Rights = adminRights,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });
             await context.SaveChangesAsync();
-            Console.WriteLine("✅ Created initial admin user: admin@demo.com / password123");
+            Console.WriteLine($"✅ Seeded new admin: {adminEmail}");
         }
         else
         {
-            // Ensure existing admin has proper role and full rights
+            // Ensure permissions and role are refreshed on startup if user is present
+            // EF Core tracks the entity from FirstOrDefaultAsync, so just updating props is enough
             adminUser.Role = "Admin";
             adminUser.IsActive = true;
             adminUser.Rights = adminRights;
-            context.Users.Update(adminUser);
+            adminUser.UpdatedAt = DateTime.UtcNow;
+            
             await context.SaveChangesAsync();
-            Console.WriteLine("✅ Updated existing admin user rights.");
+            Console.WriteLine($"✅ Verified admin access for: {adminEmail}");
         }
     }
     catch (Exception ex)
