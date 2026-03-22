@@ -20,5 +20,3 @@ export interface Ledger {
   icon: string;
   accountType: 'bank' | 'credit' | 'cash';
 }
-
-/* aria-label */

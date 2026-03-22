@@ -50,17 +50,6 @@ public class BudgetService
         budget.UpdatedAt = DateTime.UtcNow;
         budget.CompanyId = _userContext.CompanyId;
 
-        // Deduplication check
-        var exists = await GetBaseQuery().AnyAsync(b => 
-            b.CategoryId == budget.CategoryId && 
-            b.Month == budget.Month && 
-            b.Year == budget.Year);
-
-        if (exists)
-        {
-            throw new InvalidOperationException($"A budget for this category already exists for {budget.Month}/{budget.Year}.");
-        }
-
         _context.Budgets.Add(budget);
         await _context.SaveChangesAsync();
         
@@ -118,28 +107,19 @@ public class BudgetService
         }
 
         var expenses = await transactionQuery
-            .Where(t => t.Date.CompareTo(startDate) >= 0 && t.Date.CompareTo(endDate) <= 0)
+            .Where(t => string.Compare(t.Date, startDate) >= 0 && string.Compare(t.Date, endDate) <= 0)
             .GroupBy(t => t.Category)
             .Select(g => new { CategoryName = g.Key, Spent = g.Sum(t => t.Amount) })
             .ToListAsync();
 
-        // Use dictionary lookup to avoid O(n²) complexity
-        var expenseDict = expenses.ToDictionary(e => e.CategoryName, e => e.Spent);
-
-        var status = budgets.Select(b =>
+        var status = budgets.Select(b => new
         {
-            var categoryName = b.Category?.Name ?? "Unknown";
-            var spent = expenseDict.ContainsKey(categoryName) ? expenseDict[categoryName] : 0;
-
-            return new
-            {
-                b.Id,
-                CategoryName = categoryName,
-                b.Amount,
-                Spent = spent,
-                Remaining = b.Amount - spent,
-                PercentUsed = b.Amount > 0 ? (spent / b.Amount * 100) : 0
-            };
+            b.Id,
+            CategoryName = b.Category?.Name ?? "Unknown",
+            b.Amount,
+            Spent = expenses.FirstOrDefault(e => e.CategoryName == b.Category?.Name)?.Spent ?? 0,
+            Remaining = b.Amount - (expenses.FirstOrDefault(e => e.CategoryName == b.Category?.Name)?.Spent ?? 0),
+            PercentUsed = b.Amount > 0 ? (expenses.FirstOrDefault(e => e.CategoryName == b.Category?.Name)?.Spent ?? 0) / b.Amount * 100 : 0
         }).ToList();
 
         return status;

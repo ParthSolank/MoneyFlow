@@ -242,7 +242,7 @@ export default function LedgersPage() {
                   >
                     <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800 group relative overflow-hidden h-full flex flex-col">
                       <div className={`absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 duration-500 pointer-events-none`}>
-                        <IconComp className={`h-32 w-32 ${isCredit ? 'text-emerald-600' : 'text-indigo-600'}`} />
+                        <IconComp className={`h-32 w-32 ${isCredit ? 'text-purple-600' : 'text-indigo-600'}`} />
                       </div>
 
                       <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
@@ -267,7 +267,7 @@ export default function LedgersPage() {
 
                       <CardHeader className="pb-2">
                         <div className={`h-12 w-12 rounded-xl flex items-center justify-center mb-3 shadow-sm ${isCredit
-                          ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
                           : 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400'
                           }`}>
                           <IconComp className="h-6 w-6" />
@@ -425,5 +425,3 @@ export default function LedgersPage() {
     </motion.div>
   )
 }
-
-/* aria-label */

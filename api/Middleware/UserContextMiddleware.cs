@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using MoneyFlowApi.Models;
 using System.Security.Claims;
 
@@ -50,19 +49,15 @@ public class UserContextMiddleware
                     else
                     {
                         var dbContext = context.RequestServices.GetRequiredService<MoneyFlowApi.Data.MoneyFlowDbContext>();
-                        // Check company ownership.
-                        // TODO: Once a CompanyMembers table is added via migration,
-                        // extend this to: isOwner || isMember to support multi-user companies.
-                        var isOwner = await dbContext.Companies
-                            .IgnoreQueryFilters()
-                            .AnyAsync(c => c.Id == companyId && c.OwnerUserId == userContext.UserId);
-
-                        if (isOwner)
+                        var hasAccess = dbContext.Companies.Any(c => c.Id == companyId && c.OwnerUserId == userContext.UserId);
+                        
+                        if (hasAccess)
                         {
                             userContext.CompanyId = companyId;
                         }
                         else
                         {
+                            // Optional: Log unauthorized access attempt
                             var logger = context.RequestServices.GetRequiredService<ILogger<UserContextMiddleware>>();
                             logger.LogWarning("Unauthorized access attempt to Company {CompanyId} by User {UserId}", companyId, userContext.UserId);
                             // userContext.CompanyId remains null, query filters will return empty

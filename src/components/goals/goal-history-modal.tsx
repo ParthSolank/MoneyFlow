@@ -37,21 +37,7 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
 
   const handleAddContribution = async (e: React.FormEvent) => {
     e.preventDefault()
-    const amount = parseFloat(formData.amount)
-    if (!formData.amount || amount <= 0) return
-
-    // Validation: Check if ledger has enough balance
-    if (formData.ledgerId) {
-      const selectedLedger = ledgers.find((l: any) => l.id.toString() === formData.ledgerId)
-      if (selectedLedger && selectedLedger.accountType !== 'credit' && selectedLedger.balance < amount) {
-        toast({
-          title: "Insufficient Balance",
-          description: `The selected account (${selectedLedger.name}) only has ₹${selectedLedger.balance.toLocaleString()}.`,
-          variant: "destructive"
-        })
-        return
-      }
-    }
+    if (!formData.amount || parseFloat(formData.amount) <= 0) return
 
     setIsSubmitting(true)
     try {
@@ -125,7 +111,7 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
           {!isAdding ? (
              <Button 
                onClick={() => setIsAdding(true)}
-               className="w-full mb-6 h-12 rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 font-bold gap-2 transition-all hover:scale-[1.02] active:scale-95"
+               className="w-full mb-6 h-12 rounded-2xl border-2 border-dashed border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-600 font-bold gap-2 transition-all hover:scale-[1.02] active:scale-95"
                variant="ghost"
              >
                <Plus className="w-5 h-5" />
@@ -142,7 +128,7 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
                         type="number" 
                         placeholder="0.00" 
                         value={formData.amount}
-                        className="rounded-xl h-11 border-gray-100 font-bold focus:ring-emerald-600"
+                        className="rounded-xl h-11 border-gray-100 font-bold focus:ring-purple-600"
                         onChange={(e) => setFormData({...formData, amount: e.target.value})}
                         autoFocus
                      />
@@ -150,7 +136,7 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
                    <div className="space-y-2">
                      <Label className="text-[10px] font-black text-gray-400 uppercase">Account</Label>
                      <Select value={formData.ledgerId} onValueChange={(v) => setFormData({...formData, ledgerId: v})}>
-                        <SelectTrigger className="rounded-xl h-11 border-gray-100 font-bold focus:ring-emerald-600">
+                        <SelectTrigger className="rounded-xl h-11 border-gray-100 font-bold focus:ring-purple-600">
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl">
@@ -166,7 +152,7 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
                     <Input 
                        placeholder="What's this for?" 
                        value={formData.notes}
-                       className="rounded-xl h-11 border-gray-100 font-medium focus:ring-emerald-600"
+                       className="rounded-xl h-11 border-gray-100 font-medium focus:ring-purple-600"
                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
                     />
                  </div>
@@ -175,7 +161,7 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
                     <Button 
                       type="submit" 
                       disabled={isSubmitting}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold h-11 shadow-lg shadow-emerald-100"
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold h-11 shadow-lg shadow-purple-100"
                     >
                       {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save Progress"}
                     </Button>
@@ -202,11 +188,11 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
                   <div key={item.id} className="relative pl-6 pb-6 last:pb-0 group">
                     {/* Timeline Line */}
                     {idx !== history.length - 1 && (
-                      <div className="absolute left-[7px] top-4 bottom-0 w-0.5 bg-gray-100 group-hover:bg-emerald-100 transition-colors" />
+                      <div className="absolute left-[7px] top-4 bottom-0 w-0.5 bg-gray-100 group-hover:bg-purple-100 transition-colors" />
                     )}
                     
                     {/* Timeline Dot */}
-                    <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white bg-gray-200 group-hover:bg-emerald-600 transition-all z-10" />
+                    <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 border-white bg-gray-200 group-hover:bg-purple-600 transition-all z-10" />
                     
                     <div className="bg-white group-hover:bg-gray-50 transition-all p-4 rounded-2xl border border-transparent group-hover:border-gray-100 group-hover:shadow-sm">
                       <div className="flex justify-between items-start mb-1">
@@ -239,5 +225,3 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
     </Dialog>
   )
 }
-
-/* aria-label */

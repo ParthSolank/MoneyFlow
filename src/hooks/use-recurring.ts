@@ -45,5 +45,3 @@ export function useRecurring() {
         mutate
     };
 }
-
-/* aria-label */

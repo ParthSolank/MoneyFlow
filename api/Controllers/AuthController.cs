@@ -35,60 +35,14 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("activate")]
-    public async Task<IActionResult> Activate(ActivateRequest request)
-    {
-        try
-        {
-            await _authService.ActivateAccountAsync(request);
-            return Ok(new { message = "Account successfully activated! You can now log in." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, new { message = "An error occurred during activation." });
-        }
-    }
-
-    [HttpPost("resend-activation-email")]
-    public async Task<IActionResult> ResendActivationEmail(ResendActivationRequest request)
-    {
-        try
-        {
-            await _authService.ResendActivationEmailAsync(request);
-            return Ok(new { message = "Check your email for the activation link." });
-        }
-        catch (Exception ex)
-        {
-            // Log the original error but return a safe generic message
-            Console.Error.WriteLine($"[ResendActivation] Error: {ex.Message}");
-            return StatusCode(500, new { message = "An error occurred while sending the email." });
-        }
-    }
-
     [HttpPost("login")]
-    public async Task<ActionResult<object>> Login(LoginRequest request)
+    public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
     {
         try
         {
             var response = await _authService.LoginAsync(request);
-            SetAccessTokenCookie(response.Token);
             SetRefreshTokenCookie(response.RefreshToken);
-            // SECURITY FIX: Never return the raw JWT token in the response body.
-            // It is already secured inside an HttpOnly cookie. Returning it here
-            // would expose it to XSS attacks that read the response body.
-            return Ok(new
-            {
-                response.UserId,
-                response.Username,
-                response.Email,
-                response.Role,
-                response.Rights,
-                response.CompanyId
-            });
+            return Ok(response);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -97,7 +51,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<object>> RefreshToken(RefreshTokenRequest? request)
+    public async Task<ActionResult<AuthResponse>> RefreshToken(RefreshTokenRequest? request)
     {
         try
         {
@@ -107,24 +61,14 @@ public class AuthController : ControllerBase
             if (string.IsNullOrEmpty(refreshToken))
                 return Unauthorized(new { message = "Refresh token is missing." });
 
-            var response = await _authService.RefreshTokenAsync(new RefreshTokenRequest
-            {
+            var response = await _authService.RefreshTokenAsync(new RefreshTokenRequest 
+            { 
                 Token = request?.Token ?? Request.Headers["Authorization"].ToString().Replace("Bearer ", ""),
-                RefreshToken = refreshToken
+                RefreshToken = refreshToken 
             });
 
-            SetAccessTokenCookie(response.Token);
             SetRefreshTokenCookie(response.RefreshToken);
-            // SECURITY FIX: Return only metadata, not the raw token
-            return Ok(new
-            {
-                response.UserId,
-                response.Username,
-                response.Email,
-                response.Role,
-                response.Rights,
-                response.CompanyId
-            });
+            return Ok(response);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -136,73 +80,11 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpGet("me")]
-    [Microsoft.AspNetCore.Authorization.Authorize]
-    public IActionResult Me()
-    {
-        // Returns authenticated user info decoded from the HttpOnly cookie JWT.
-        // This is used by the frontend to hydrate user state on page refresh.
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst("nameid")?.Value
-            ?? User.FindFirst("sub")?.Value;
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value
-            ?? User.FindFirst("unique_name")?.Value;
-        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-            ?? User.FindFirst("email")?.Value;
-        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
-            ?? User.FindFirst("role")?.Value;
-        var rights = User.FindAll("Right").Select(c => c.Value).ToList();
-
-        if (userId == null) return Unauthorized();
-
-        return Ok(new
-        {
-            Id = int.TryParse(userId, out var id) ? id : 0,
-            Username = username ?? "User",
-            Email = email ?? "",
-            Role = role ?? "User",
-            Rights = rights
-        });
-    }
-
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        Response.Cookies.Delete("accessToken");
         Response.Cookies.Delete("refreshToken");
         return Ok(new { message = "Logged out successfully" });
-    }
-
-    // SECURITY FIX: Restricted to Admin role only.
-    // This endpoint creates a master account and must NEVER be publicly accessible.
-    [HttpGet("seed-master")]
-    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
-    public async Task<IActionResult> SeedMaster()
-    {
-        try
-        {
-            var success = await _authService.SeedMasterAsync();
-            if (success)
-                return Ok(new { message = "Master account 'home finance' created successfully!" });
-            else
-                return Conflict(new { message = "Master account already exists." });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = ex.Message });
-        }
-    }
-
-    private void SetAccessTokenCookie(string accessToken)
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true, // Set to true in production
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddMinutes(15)
-        };
-        Response.Cookies.Append("accessToken", accessToken, cookieOptions);
     }
 
     private void SetRefreshTokenCookie(string refreshToken)

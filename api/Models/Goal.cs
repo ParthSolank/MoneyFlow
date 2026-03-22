@@ -16,7 +16,6 @@ public class Goal
     public string? Description { get; set; }
 
     [Required]
-    [Range(0.01, double.MaxValue, ErrorMessage = "Target amount must be greater than 0")]
     [Column(TypeName = "decimal(18, 2)")]
     public decimal TargetAmount { get; set; }
 

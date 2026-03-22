@@ -53,12 +53,6 @@ public class CategoryService
             category.CompanyId = _userContext.CompanyId;
         }
 
-        var exists = await GetBaseQuery().AnyAsync(c => c.Name.ToLower() == category.Name.ToLower());
-        if (exists)
-        {
-            throw new InvalidOperationException($"A category with the name '{category.Name}' already exists.");
-        }
-
         _context.Categories.Add(category);
         await _context.SaveChangesAsync();
         
@@ -127,8 +121,6 @@ public class CategoryService
             ("Other", "expense", "MoreHorizontal", "#94a3b8", "emergency,gift,family", new[] { "Family", "Gifts", "Emergency" })
         };
 
-        var allCategories = new List<Category>();
-
         foreach (var cat in categories)
         {
             var parent = new Category
@@ -143,39 +135,24 @@ public class CategoryService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            allCategories.Add(parent);
-
-            // Add parent first so we get the ID for subcategories
             _context.Categories.Add(parent);
-        }
+            await _context.SaveChangesAsync();
 
-        // Save all parents first
-        await _context.SaveChangesAsync();
-
-        // Now add all subcategories
-        foreach (var cat in categories)
-        {
-            var parent = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Name == cat.Name && c.CompanyId == targetCompanyId && c.ParentId == null);
-
-            if (parent != null)
+            foreach (var subName in cat.Subs)
             {
-                foreach (var subName in cat.Subs)
+                var sub = new Category
                 {
-                    var sub = new Category
-                    {
-                        Name = subName,
-                        Type = cat.Type,
-                        Icon = cat.Icon,
-                        Color = cat.Color,
-                        Keywords = subName.ToLower(),
-                        ParentId = parent.Id,
-                        CompanyId = targetCompanyId,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
-                    _context.Categories.Add(sub);
-                }
+                    Name = subName,
+                    Type = cat.Type,
+                    Icon = cat.Icon,
+                    Color = cat.Color,
+                    Keywords = subName.ToLower(),
+                    ParentId = parent.Id,
+                    CompanyId = targetCompanyId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.Categories.Add(sub);
             }
         }
 

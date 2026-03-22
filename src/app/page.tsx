@@ -17,7 +17,6 @@ import { CashFlowCalendar } from "@/components/dashboard/cash-flow-calendar";
 import { getCurrentFinancialYear } from "@/lib/financial-year-utils";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, useMemo } from "react";
-import { ErrorBoundary } from "@/components/error-boundary";
 
 const iconMap: Record<string, any> = {
   Wallet,
@@ -45,11 +44,7 @@ export default function Dashboard() {
     if (!user || !mounted) return;
 
     if (canView("ADMIN", "USER_MANAGEMENT")) {
-      userApi.getAll()
-        .then(data => setUsersCount(data.length))
-        .catch(error => {
-          console.error('Failed to load users:', error);
-        });
+      userApi.getAll().then(data => setUsersCount(data.length)).catch(console.error);
     }
 
     // Fetch budgets for current month
@@ -57,10 +52,7 @@ export default function Dashboard() {
     setLoadingBudgets(true);
     budgetApi.getStatus(now.getMonth() + 1, now.getFullYear())
       .then(data => setBudgetStats(data))
-      .catch(error => {
-        console.error('Failed to load budget stats:', error);
-        setBudgetStats([]);
-      })
+      .catch(console.error)
       .finally(() => setLoadingBudgets(false));
   }, [user?.id, mounted, canView]); // Keep canView but it's now stable
 
@@ -101,17 +93,13 @@ export default function Dashboard() {
       </div>
 
       <div className="pt-2">
-        <ErrorBoundary>
-          <SummaryCards startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
-        </ErrorBoundary>
+        <SummaryCards startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
       </div>
 
-      <ErrorBoundary>
-        <SmartInsights />
-      </ErrorBoundary>
+      <SmartInsights />
 
       {!loadingLedgers && ledgers.length === 0 && (
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 via-emerald-600 to-pink-600 text-white overflow-hidden relative group">
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden relative group">
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute -right-12 -top-12 h-64 w-64 bg-white/10 rounded-full blur-3xl opacity-50" />
             <CardContent className="p-8 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
@@ -148,13 +136,9 @@ export default function Dashboard() {
           </Card>
       )}
 
-      <ErrorBoundary>
-        <DashboardCharts startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
-      </ErrorBoundary>
+      <DashboardCharts startDate={selectedFY.startDate} endDate={selectedFY.endDate} />
 
-      <ErrorBoundary>
-        <CashFlowCalendar />
-      </ErrorBoundary>
+      <CashFlowCalendar />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 2xl:grid-cols-12">
         <div className="lg:col-span-4 2xl:col-span-8 h-full">
@@ -391,5 +375,3 @@ export default function Dashboard() {
     </div>
   )
 }
-
-/* aria-label */

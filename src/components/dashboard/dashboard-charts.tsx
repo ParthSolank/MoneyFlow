@@ -76,7 +76,7 @@ export function DashboardCharts({ startDate, endDate }: DashboardChartsProps) {
     }, [transactions, trends, startDate, endDate]);
 
     const categoryData = useMemo(() => {
-        const colors = ["#6366f1", "#10b981", "#ec4899", "#3b82f6", "#10b981", "#f59e0b"];
+        const colors = ["#6366f1", "#8b5cf6", "#ec4899", "#3b82f6", "#10b981", "#f59e0b"];
         
         if (breakdownMode === "expense") {
             return breakdown.map((item, i) => ({
@@ -211,7 +211,7 @@ export function DashboardCharts({ startDate, endDate }: DashboardChartsProps) {
             <Card className="lg:col-span-12 xl:col-span-4 2xl:col-span-6 border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg font-bold flex items-center gap-2">
-                        {breakdownMode === "expense" ? <PieIcon className="h-4 w-4 text-emerald-500" /> : <Wallet className="h-4 w-4 text-emerald-500" />}
+                        {breakdownMode === "expense" ? <PieIcon className="h-4 w-4 text-purple-500" /> : <Wallet className="h-4 w-4 text-emerald-500" />}
                         {breakdownMode === "expense" ? "Expense Split" : "Wealth Mix"}
                     </CardTitle>
                     <div className="flex bg-gray-100/50 p-1 rounded-lg ring-1 ring-gray-100">
@@ -232,7 +232,7 @@ export function DashboardCharts({ startDate, endDate }: DashboardChartsProps) {
                 <CardContent className="flex flex-col items-center justify-center min-h-[350px]">
                     {breakdownLoading || distLoading ? (
                         <div className="flex flex-col items-center gap-2">
-                            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
                             <p className="text-xs text-muted-foreground">Analyzing Breakdown...</p>
                         </div>
                     ) : categoryData.length === 0 ? (
@@ -312,5 +312,3 @@ export function DashboardCharts({ startDate, endDate }: DashboardChartsProps) {
         </div>
     );
 }
-
-/* aria-label */

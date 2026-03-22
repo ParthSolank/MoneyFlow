@@ -16,8 +16,8 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (userData: User) => void;
-    register: (userData: User) => void;
+    login: (token: string) => void;
+    register: (token: string) => void;
     logout: () => Promise<void>;
     companyId: number | null;
     setCompanyId: (id: number | null) => void;
@@ -56,35 +56,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
         const storedCompanyId = localStorage.getItem('companyId');
 
         if (storedCompanyId) {
-            setCompanyIdState(parseInt(storedCompanyId, 10));
+            setCompanyIdState(parseInt(storedCompanyId));
         }
 
-        // Fetch current user from backend using the HttpOnly cookie session
-        const restoreSession = async () => {
-            try {
-                const userData = await api.get<User>('/auth/me');
-                if (userData && userData.id) {
-                    setUser(userData);
-                }
-            } catch (error) {
-                // If not logged in, user state remains null. This is fine.
-                console.log('Restoration failed: No active session');
-            } finally {
-                setLoading(false);
+        if (token) {
+            const userData = getUserFromToken(token);
+            if (userData) {
+                setUser(userData);
+            } else {
+                localStorage.removeItem('token');
             }
-        };
-
-        restoreSession();
+        }
+        setLoading(false);
     }, []);
 
-    const login = React.useCallback((userData: User) => {
+    const login = React.useCallback((token: string) => {
+        localStorage.setItem('token', token);
+        const userData = getUserFromToken(token);
         setUser(userData);
+        // We handle navigation in AppShell or the login page itself to avoid double push
     }, []);
 
-    const register = React.useCallback((userData: User) => {
+    const register = React.useCallback((token: string) => {
+        localStorage.setItem('token', token);
+        const userData = getUserFromToken(token);
         setUser(userData);
     }, []);
 
@@ -103,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
             console.error('Failed to logout from server', error);
         }
-        // Cookies are cleared by the backend via Set-Cookie headers
+        localStorage.removeItem('token');
         localStorage.removeItem('companyId');
         setUser(null);
         setCompanyIdState(null);

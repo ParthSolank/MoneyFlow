@@ -6,7 +6,6 @@ using MoneyFlowApi.Services;
 using Moq;
 using Xunit;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MoneyFlowApi.Tests;
 
@@ -25,7 +24,7 @@ public class SecurityTests
         var configMock = new Mock<IConfiguration>();
         configMock.Setup(c => c["JwtSettings:Secret"]).Returns("LongEnoughSecretForTestingPurpose123!");
         
-        var authService = new AuthService(context, configMock.Object, NullLogger<AuthService>.Instance);
+        var authService = new AuthService(context, configMock.Object);
 
         var request = new RegisterRequest
         {

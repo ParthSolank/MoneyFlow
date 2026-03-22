@@ -25,10 +25,7 @@ public class ReportingService
 
         var transactions = await _context.Transactions
             .Include(t => t.Ledger)
-            .Where(t => !t.IsDeleted &&
-                       t.CompanyId == _userContext.CompanyId &&
-                       string.Compare(t.Date, startDateStr) >= 0 &&
-                       string.Compare(t.Date, endDateStr) <= 0)
+            .Where(t => string.Compare(t.Date, startDateStr) >= 0 && string.Compare(t.Date, endDateStr) <= 0)
             .OrderBy(t => t.Date)
             .ToListAsync();
 
@@ -137,13 +134,11 @@ public class ReportingService
         var prevMonthEnd = new DateTime(now.Year, now.Month, 1).AddDays(-1).ToString("yyyy-MM-dd");
 
         var currentTransactions = await _context.Transactions
-            .Where(t => !t.IsDeleted && t.CompanyId == _userContext.CompanyId &&
-                       string.Compare(t.Date, currentMonthStart) >= 0 && t.Type == "expense")
+            .Where(t => string.Compare(t.Date, currentMonthStart) >= 0 && t.Type == "expense")
             .ToListAsync();
 
         var prevTransactions = await _context.Transactions
-            .Where(t => !t.IsDeleted && t.CompanyId == _userContext.CompanyId &&
-                       string.Compare(t.Date, prevMonthStart) >= 0 && string.Compare(t.Date, prevMonthEnd) <= 0 && t.Type == "expense")
+            .Where(t => string.Compare(t.Date, prevMonthStart) >= 0 && string.Compare(t.Date, prevMonthEnd) <= 0 && t.Type == "expense")
             .ToListAsync();
 
         var insights = new List<SmartInsight>();
@@ -198,20 +193,20 @@ public class ReportingService
         }
 
         // 3. Goal Analysis
-        var goals = await _context.Goals.Where(g => !g.IsDeleted && g.CurrentAmount < g.TargetAmount).ToListAsync();
+        var goals = await _context.Goals.Where(g => g.CurrentAmount < g.TargetAmount).ToListAsync();
         foreach (var goal in goals)
         {
             var remaining = goal.TargetAmount - goal.CurrentAmount;
             if (goal.Deadline.HasValue)
             {
                 var daysLeft = (goal.Deadline.Value - DateTime.UtcNow).TotalDays;
-                if (daysLeft > 0.1) // Avoid division by very small numbers
+                if (daysLeft > 0)
                 {
                     var neededPerDay = remaining / (decimal)daysLeft;
-                    insights.Add(new SmartInsight
-                    {
-                        Type = "goal",
-                        Title = goal.Title,
+                    insights.Add(new SmartInsight 
+                    { 
+                        Type = "goal", 
+                        Title = goal.Title, 
                         Message = $"You need to save ₹{neededPerDay:N0} daily to reach your target by {goal.Deadline.Value:dd MMM}."
                     });
                 }

@@ -120,9 +120,7 @@ public class MoneyFlowDbContext : DbContext
         // Configure AuditLog entity
         modelBuilder.Entity<AuditLog>(entity =>
         {
-            entity.HasQueryFilter(e =>
-                (_userContext.Role == "Admin" && _userContext.CompanyId == null) ||
-                (_userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId));
+            entity.HasQueryFilter(e => _userContext.CompanyId != null && e.CompanyId == _userContext.CompanyId);
         });
 
         // Configure Category entity

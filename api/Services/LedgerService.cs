@@ -41,18 +41,17 @@ public class LedgerService
 
     // Get ledger by ID
     public async Task<Ledger?> GetByIdAsync(int id) {
-        var ledger = await GetBaseQuery()
-            .Include(l => l.Transactions.Where(t => !t.IsDeleted))
-            .FirstOrDefaultAsync(l => l.Id == id);
-
-        if (ledger != null && ledger.Transactions != null)
-        {
-            // Sort transactions after fetch to avoid EF ordering issues
-            ledger.Transactions = ledger.Transactions
+        var ledger = await GetBaseQuery().FirstOrDefaultAsync(l => l.Id == id);
+        
+        if (ledger != null) {
+            // Explicitly load transactions to ensure they are fetched correctly
+            // even if global filters are complex
+            ledger.Transactions = await _context.Transactions
+                .Where(t => t.LedgerId == id && !t.IsDeleted)
                 .OrderByDescending(t => t.Date)
-                .ToList();
+                .ToListAsync();
         }
-
+        
         return ledger;
     }
 
@@ -70,12 +69,6 @@ public class LedgerService
         ledger.UpdatedAt = DateTime.UtcNow;
         ledger.CompanyId = _userContext.CompanyId;
         ledger.InitialBalance = ledger.Balance; // Set initial balance to current balance on creation
-
-        var exists = await GetBaseQuery().AnyAsync(l => l.Name.ToLower() == ledger.Name.ToLower());
-        if (exists)
-        {
-            throw new InvalidOperationException($"An account/ledger with the name '{ledger.Name}' already exists.");
-        }
         
         _context.Ledgers.Add(ledger);
         await _context.SaveChangesAsync();

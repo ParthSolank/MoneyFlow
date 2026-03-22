@@ -48,8 +48,8 @@ export function CashFlowCalendar() {
             onSelect={setDate}
             className="rounded-xl border-none p-0"
             classNames={{
-                day_today: "bg-emerald-100 text-emerald-900 font-bold rounded-lg",
-                day_selected: "bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg",
+                day_today: "bg-purple-100 text-purple-900 font-bold rounded-lg",
+                day_selected: "bg-purple-600 text-white hover:bg-purple-700 rounded-lg",
             }}
           />
         </div>
@@ -109,7 +109,7 @@ export function CashFlowCalendar() {
           <div className="p-4 bg-gray-50/50 mt-auto">
              <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Balance</span>
-                <span className="text-lg font-black text-emerald-600">₹{currentBalance.toLocaleString()}</span>
+                <span className="text-lg font-black text-purple-600">₹{currentBalance.toLocaleString()}</span>
              </div>
           </div>
         </div>
@@ -117,5 +117,3 @@ export function CashFlowCalendar() {
     </Card>
   )
 }
-
-/* aria-label */

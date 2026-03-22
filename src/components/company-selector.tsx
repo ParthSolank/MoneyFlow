@@ -206,5 +206,3 @@ export function CompanySelector() {
         </div>
     );
 }
-
-/* aria-label */

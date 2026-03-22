@@ -59,13 +59,13 @@ export default function RegisterPage() {
             });
 
             toast({
-                title: "Account Created! 📧",
-                description: "Please check your email for the activation key.",
+                title: "Account Created! 🎉",
+                description: "You can now log in to your account.",
                 className: "bg-indigo-50 border-indigo-200 text-indigo-900",
             });
 
-            // Redirect to activation page with email pre-filled in query
-            router.push(`/activate?email=${encodeURIComponent(values.email)}`);
+            // Redirect to login page
+            router.push("/login");
 
         } catch (error: any) {
             toast({
@@ -97,7 +97,7 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="flex min-h-screen sm:min-h-[100dvh] items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-emerald-50 px-4 py-8 overflow-y-auto">
+        <div className="flex min-h-screen sm:min-h-[100dvh] items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 py-8 overflow-y-auto">
             <motion.div
                 initial="hidden"
                 animate="visible"
@@ -105,7 +105,7 @@ export default function RegisterPage() {
                 variants={containerVariants}
                 className="w-full max-w-md relative"
             >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-2xl blur-3xl opacity-20 transform scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-2xl blur-3xl opacity-20 transform scale-105" />
 
                 <Card className="shadow-2xl border-0 overflow-hidden backdrop-blur-xl bg-white/80 relative z-10 ring-1 ring-gray-100">
                     <CardHeader className="space-y-2 text-center pb-8 pt-8">
@@ -113,12 +113,12 @@ export default function RegisterPage() {
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
                             transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                            className="bg-gradient-to-br from-indigo-500 to-emerald-600 w-16 h-16 mx-auto p-3.5 rounded-2xl shadow-lg mb-4 flex items-center justify-center"
+                            className="bg-gradient-to-br from-indigo-500 to-purple-600 w-16 h-16 mx-auto p-3.5 rounded-2xl shadow-lg mb-4 flex items-center justify-center"
                         >
                             <Wallet className="w-full h-full text-white" />
                         </motion.div>
                         <motion.div variants={itemVariants}>
-                            <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-emerald-600 tracking-tight">
+                            <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight">
                                 Create Account
                             </CardTitle>
                             <CardDescription className="text-base text-gray-500 mt-2">
@@ -205,7 +205,7 @@ export default function RegisterPage() {
                                 <motion.div variants={itemVariants} className="pt-2">
                                     <Button
                                         type="submit"
-                                        className="w-full h-11 bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 text-base font-medium"
+                                        className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 text-base font-medium"
                                         disabled={isLoading}
                                     >
                                         {isLoading ? (
@@ -238,7 +238,7 @@ export default function RegisterPage() {
             {/* Floating Watermark */}
             <div className="fixed bottom-6 right-6 pointer-events-none z-50 opacity-20 hover:opacity-100 transition-opacity duration-500 hidden sm:block">
                 <div className="bg-white/40 shadow-sm backdrop-blur-[2px] border border-gray-200/50 px-3 py-1.5 rounded-full flex items-center gap-2 ring-1 ring-black/5">
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-600 flex items-center justify-center text-[8px] text-white font-black shadow-sm">
+                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] text-white font-black shadow-sm">
                         P
                     </div>
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] whitespace-nowrap">
@@ -249,5 +249,3 @@ export default function RegisterPage() {
         </div>
     );
 }
-
-/* aria-label */

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyFlowApi.Models;
 using MoneyFlowApi.Services;
 using MoneyFlowApi.Attributes;
-using MoneyFlowApi.Data;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -18,14 +17,11 @@ public class TransactionsController : ControllerBase
 {
     private readonly TransactionService _transactionService;
     private readonly AuditLogService _auditLogService;
-    private readonly MoneyFlowDbContext _context;
-    private const int MAX_PAGE_SIZE = 100;
 
-    public TransactionsController(TransactionService transactionService, AuditLogService auditLogService, MoneyFlowDbContext context)
+    public TransactionsController(TransactionService transactionService, AuditLogService auditLogService)
     {
         _transactionService = transactionService;
         _auditLogService = auditLogService;
-        _context = context;
     }
 
     // GET: api/transactions
@@ -33,12 +29,6 @@ public class TransactionsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResult<Transaction>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        // Validate pagination input
-        if (page < 1)
-            return BadRequest(new { message = "Page must be >= 1" });
-        if (pageSize < 1 || pageSize > MAX_PAGE_SIZE)
-            return BadRequest(new { message = $"PageSize must be between 1 and {MAX_PAGE_SIZE}" });
-
         var result = await _transactionService.GetAllAsync(page, pageSize);
         return Ok(result);
     }
@@ -50,11 +40,7 @@ public class TransactionsController : ControllerBase
     {
         var transaction = await _transactionService.GetByIdAsync(id);
         if (transaction == null)
-        {
-            await _auditLogService.LogAsync("ACCESS_DENIED", "Transactions",
-                $"Attempted access to non-existent transaction ID {id}");
             return NotFound(new { message = $"Transaction with ID {id} not found" });
-        }
 
         return Ok(transaction);
     }
@@ -64,12 +50,6 @@ public class TransactionsController : ControllerBase
     [HttpGet("ledger/{ledgerId:int}")]
     public async Task<ActionResult<PagedResult<Transaction>>> GetByLedgerId(int ledgerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        // Validate pagination input
-        if (page < 1)
-            return BadRequest(new { message = "Page must be >= 1" });
-        if (pageSize < 1 || pageSize > 100)
-            return BadRequest(new { message = "PageSize must be between 1 and 100" });
-
         var result = await _transactionService.GetByLedgerIdAsync(ledgerId, page, pageSize);
         return Ok(result);
     }
@@ -126,15 +106,6 @@ public class TransactionsController : ControllerBase
         if (string.IsNullOrEmpty(start) || string.IsNullOrEmpty(end))
             return BadRequest(new { message = "Both start and end dates are required" });
 
-        // MEDIUM FIX #11: Validate date format before passing to the service.
-        // Malformed strings (e.g. "not-a-date") reach the DB layer and cause
-        // unhandled exceptions that leak stack traces in error responses.
-        if (!DateTime.TryParse(start, out var startDate) || !DateTime.TryParse(end, out var endDate))
-            return BadRequest(new { message = "Invalid date format. Use YYYY-MM-DD." });
-
-        if (startDate > endDate)
-            return BadRequest(new { message = "Start date must be before or equal to end date." });
-
         var transactions = await _transactionService.GetByDateRangeAsync(start, end);
         return Ok(transactions);
     }
@@ -183,14 +154,6 @@ public class TransactionsController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        // Validate ledger exists before creating transaction
-        if (transaction.LedgerId.HasValue)
-        {
-            var ledgerExists = await _context.Ledgers.FindAsync(transaction.LedgerId.Value);
-            if (ledgerExists == null)
-                return BadRequest(new { message = $"Ledger with ID {transaction.LedgerId} not found" });
-        }
-
         try
         {
             var created = await _transactionService.CreateAsync(transaction);
@@ -236,35 +199,14 @@ public class TransactionsController : ControllerBase
     [AuthorizeRight("CORE_TRANSACTIONS_CREATE")]
     public async Task<IActionResult> ImportCsv(IFormFile file, [FromForm] int? ledgerId)
     {
-        // Validate file
-        const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
-        if (file == null || file.Length == 0)
-            return BadRequest(new { message = "File is empty." });
-        if (file.Length > MaxFileSize)
-            return BadRequest(new { message = $"File size exceeds maximum allowed ({MaxFileSize / 1024 / 1024}MB)." });
-
-        // Validate MIME type AND extension — extension alone can be spoofed by renaming files
-        var extension = Path.GetExtension(file.FileName).ToLower();
-        var allowedExtensions = new[] { ".csv", ".xlsx" };
-        if (!allowedExtensions.Contains(extension))
-            return BadRequest(new { message = "Invalid file type. Allowed: CSV (.csv), Excel (.xlsx)" });
-
-        // HIGH FIX #8: Validate actual Content-Type header in addition to extension
-        var allowedMimeTypes = new[]
-        {
-            "text/csv",
-            "application/csv",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/octet-stream" // Fallback some browsers send for .xlsx
-        };
-        if (!allowedMimeTypes.Contains(file.ContentType.ToLower()))
-            return BadRequest(new { message = "Invalid file content type. Upload a valid CSV or Excel file." });
+        if (file == null || file.Length == 0) return BadRequest("File is empty.");
 
         try
         {
+            var extension = Path.GetExtension(file.FileName).ToLower();
             using var memStream = new MemoryStream();
             await file.CopyToAsync(memStream);
-
+            
             var count = await _transactionService.ImportFromStreamAsync(memStream, extension, ledgerId);
 
             await _auditLogService.LogAsync("IMPORT", "Transactions", $"Imported {count} transactions via File.");
@@ -272,7 +214,7 @@ public class TransactionsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { message = $"Failed to import file: {ex.Message}" });
+            return BadRequest($"Failed to import file: {ex.Message}");
         }
     }
 

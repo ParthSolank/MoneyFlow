@@ -69,7 +69,7 @@ export function AppSidebar({
             onClick={toggle}
             className="flex items-center gap-3 transition-transform active:scale-95 text-left"
           >
-            <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-emerald-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+            <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-200">
               <Wallet className="w-6 h-6" />
             </div>
             {(isExpanded || isMobileOpen) && (
@@ -79,7 +79,7 @@ export function AppSidebar({
                 className="flex flex-col whitespace-nowrap"
               >
                 <span className="text-sm font-bold text-gray-900">MoneyFlow</span>
-                <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Pro Edition</span>
+                <span className="text-[10px] text-purple-600 font-bold uppercase tracking-wider">Pro Edition</span>
               </motion.div>
             )}
           </button>
@@ -87,7 +87,7 @@ export function AppSidebar({
           {(isExpanded || isMobileOpen) && (
             <button 
               onClick={isMobileOpen ? closeMobile : toggle}
-              className="p-2 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-emerald-600 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-purple-600 transition-colors"
             >
               <PanelLeft className="w-4 h-4" />
             </button>
@@ -119,9 +119,9 @@ export function AppSidebar({
         <div className="mt-auto px-3 flex flex-col gap-4 w-full">
           <div className={cn(
             "flex items-center rounded-xl transition-all p-2",
-            (isExpanded || isMobileOpen) ? "bg-emerald-50" : "justify-center"
+            (isExpanded || isMobileOpen) ? "bg-purple-50" : "justify-center"
           )}>
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-md relative">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-md relative">
               {user?.username?.substring(0, 1).toUpperCase() || "A"}
               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
             </div>
@@ -132,7 +132,7 @@ export function AppSidebar({
                 className="ml-3 flex flex-col min-w-0"
               >
                 <span className="text-sm font-bold text-gray-900 truncate">{user?.username || "Admin"}</span>
-                <span className="text-[10px] text-emerald-600 font-medium uppercase tracking-wider">{user?.role || "User"}</span>
+                <span className="text-[10px] text-purple-600 font-medium uppercase tracking-wider">{user?.role || "User"}</span>
               </motion.div>
             )}
           </div>
@@ -152,7 +152,7 @@ export function AppSidebar({
             "mt-2 mb-2 px-2 py-3 rounded-xl border border-dashed border-gray-200 flex items-center gap-3 overflow-hidden bg-gray-50/80 shadow-inner",
             !(isExpanded || isMobileOpen) && "justify-center px-0"
           )}>
-            <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-emerald-600 flex items-center justify-center text-[10px] font-black text-white shadow-sm ring-2 ring-white uppercase">
+            <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-black text-white shadow-sm ring-2 ring-white uppercase">
               P
             </div>
             {(isExpanded || isMobileOpen) && (
@@ -178,7 +178,7 @@ function SidebarItem({ item, isActive, isExpanded, isDestructive = false }: { it
       className={cn(
         "relative flex items-center rounded-xl transition-all duration-300 group h-12 shadow-sm hover:shadow-md",
         isActive 
-          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200" 
+          ? "bg-purple-600 text-white shadow-lg shadow-purple-200" 
           : "text-gray-400 hover:bg-gray-100 hover:text-gray-900",
         isExpanded ? "px-4 gap-4 w-full" : "justify-center w-14 mx-auto"
       )}
@@ -198,7 +198,7 @@ function SidebarItem({ item, isActive, isExpanded, isDestructive = false }: { it
       {isActive && !isExpanded && (
         <motion.div
           layoutId="active-pill"
-          className="absolute -left-3 w-1.5 h-6 bg-emerald-600 rounded-r-full"
+          className="absolute -left-3 w-1.5 h-6 bg-purple-600 rounded-r-full"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         />
@@ -223,4 +223,3 @@ function SidebarItem({ item, isActive, isExpanded, isDestructive = false }: { it
     </Tooltip>
   )
 }
-/* aria-label */

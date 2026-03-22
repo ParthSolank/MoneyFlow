@@ -114,5 +114,3 @@ export function SpendingHeatmap({ transactions, isLoading }: SpendingHeatmapProp
         </Card>
     );
 }
-
-/* aria-label */

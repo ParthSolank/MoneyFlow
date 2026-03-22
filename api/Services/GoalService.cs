@@ -18,7 +18,6 @@ public class GoalService
     public async Task<List<Goal>> GetAllAsync()
     {
         return await _context.Goals
-            .Where(g => !g.IsDeleted && g.CompanyId == _userContext.CompanyId)
             .Include(g => g.Ledger)
             .OrderByDescending(g => g.CreatedAt)
             .ToListAsync();
@@ -26,9 +25,7 @@ public class GoalService
 
     public async Task<Goal?> GetByIdAsync(int id)
     {
-        return await _context.Goals
-            .Where(g => !g.IsDeleted && g.CompanyId == _userContext.CompanyId && g.Id == id)
-            .FirstOrDefaultAsync();
+        return await _context.Goals.FindAsync(id);
     }
 
     public async Task<Goal> CreateAsync(Goal goal)
@@ -44,9 +41,7 @@ public class GoalService
 
     public async Task<bool> UpdateAsync(int id, Goal goal)
     {
-        var existing = await _context.Goals
-            .Where(g => !g.IsDeleted && g.Id == id)
-            .FirstOrDefaultAsync();
+        var existing = await _context.Goals.FindAsync(id);
         if (existing == null) return false;
 
         existing.Title = goal.Title;
@@ -65,9 +60,7 @@ public class GoalService
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var goal = await _context.Goals
-            .Where(g => !g.IsDeleted && g.Id == id)
-            .FirstOrDefaultAsync();
+        var goal = await _context.Goals.FindAsync(id);
         if (goal == null) return false;
 
         goal.IsDeleted = true;
@@ -87,43 +80,26 @@ public class GoalService
 
     public async Task<GoalContribution> AddContributionAsync(int goalId, decimal amount, int? ledgerId, string? notes)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        var goal = await _context.Goals.FindAsync(goalId);
+        if (goal == null) throw new Exception("Goal not found");
 
-        try
+        var contribution = new GoalContribution
         {
-            var goal = await _context.Goals
-                .Where(g => !g.IsDeleted && g.Id == goalId && g.CompanyId == _userContext.CompanyId)
-                .FirstOrDefaultAsync();
-            if (goal == null) throw new InvalidOperationException("Goal not found");
+            GoalId = goalId,
+            Amount = amount,
+            LedgerId = ledgerId,
+            Notes = notes,
+            CompanyId = _userContext.CompanyId ?? 0,
+            ContributionDate = DateTime.UtcNow
+        };
 
-            var contribution = new GoalContribution
-            {
-                GoalId = goalId,
-                Amount = amount,
-                LedgerId = ledgerId,
-                Notes = notes,
-                CompanyId = _userContext.CompanyId ?? 0,
-                ContributionDate = DateTime.UtcNow
-            };
+        _context.GoalContributions.Add(contribution);
+        
+        // Update goal current amount
+        goal.CurrentAmount += amount;
+        goal.UpdatedAt = DateTime.UtcNow;
 
-            _context.GoalContributions.Add(contribution);
-            await _context.SaveChangesAsync();
-
-            // Use ONLY atomic database update - don't do separate in-memory update
-            // This ensures the update is truly atomic even with concurrent requests
-            await _context.Goals
-                .Where(g => g.Id == goalId)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(g => g.CurrentAmount, g => g.CurrentAmount + amount)
-                    .SetProperty(g => g.UpdatedAt, DateTime.UtcNow));
-
-            await transaction.CommitAsync();
-            return contribution;
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+        await _context.SaveChangesAsync();
+        return contribution;
     }
 }

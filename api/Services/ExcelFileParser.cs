@@ -51,7 +51,10 @@ public class ExcelFileParser : IFileParser
         {
             var row = table.Rows[i];
             string firstCol = row[0]?.ToString()?.ToUpper()?.Trim() ?? "";
-            if (firstCol.Contains("STATEMENT SUMMARY") || firstCol.Contains("OPENING BALANCE") || firstCol.Contains("CLOSING BALANCE")) break;
+            string desc = descCol != -1 && row[descCol] != DBNull.Value ? (row[descCol]?.ToString() ?? "Imported") : "Imported";
+            string lowerDesc = desc.ToLower();
+            if (firstCol.Contains("STATEMENT SUMMARY") || firstCol.Contains("OPENING BALANCE") || firstCol.Contains("CLOSING BALANCE") ||
+                lowerDesc.Contains("opening balance") || lowerDesc.Contains("brought forward") || lowerDesc.Contains("b/f") || lowerDesc.Contains("b/d")) continue;
 
             string dateStr = (dateCol != -1 && row[dateCol] != DBNull.Value) ? row[dateCol]?.ToString()?.Trim() ?? "" : "";
             if (string.IsNullOrWhiteSpace(dateStr) || dateStr.Contains("***")) continue;
@@ -82,9 +85,8 @@ public class ExcelFileParser : IFileParser
             }
             else continue;
 
-            // Auto-categorization
+            // Auto-categorization using the desc variable defined at the top of the loop
             string category = "misc";
-            string desc = descCol != -1 && row[descCol] != DBNull.Value ? (row[descCol]?.ToString() ?? "Imported") : "Imported";
             
             var matchedCategory = allCategories.FirstOrDefault(c => 
                 !string.IsNullOrEmpty(c.Keywords) && 

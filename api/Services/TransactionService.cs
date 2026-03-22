@@ -129,21 +129,13 @@ public class TransactionService
             .ToListAsync();
 
     // Get transactions by date range
-    public async Task<List<Transaction>> GetByDateRangeAsync(string startDate, string endDate)
-    {
-        // Validate and parse date format
-        if (!DateTime.TryParseExact(startDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime parsedStartDate))
-            throw new ArgumentException($"Invalid start date format: {startDate}. Use yyyy-MM-dd");
-        if (!DateTime.TryParseExact(endDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out DateTime parsedEndDate))
-            throw new ArgumentException($"Invalid end date format: {endDate}. Use yyyy-MM-dd");
-
-        return await GetBaseQuery()
+    public async Task<List<Transaction>> GetByDateRangeAsync(string startDate, string endDate) =>
+        await GetBaseQuery()
             .Include(t => t.Ledger)
-            .Where(t => t.Date.CompareTo(startDate) >= 0 &&
-                       t.Date.CompareTo(endDate) <= 0)
+            .Where(t => string.Compare(t.Date, startDate) >= 0 && 
+                       string.Compare(t.Date, endDate) <= 0)
             .OrderByDescending(t => t.Date)
             .ToListAsync();
-    }
 
     private async Task UpdateLedgerBalanceAsync(int? ledgerId, decimal amount, string type, bool apply)
     {
@@ -178,13 +170,10 @@ public class TransactionService
         using var dbTransaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // Validation: Check balance if expense using locked query to prevent race condition
+            // Validation: Check balance if expense (non-atomic check, but within transaction)
             if (transaction.Type == "expense" && transaction.LedgerId.HasValue)
             {
-                var ledger = await _context.Ledgers
-                    .FromSqlInterpolated($"SELECT * FROM Ledgers WITH (UPDLOCK, READCOMMITTED) WHERE Id = {transaction.LedgerId.Value}")
-                    .FirstOrDefaultAsync();
-
+                var ledger = await _context.Ledgers.FindAsync(transaction.LedgerId.Value);
                 if (ledger != null && ledger.AccountType != "credit" && ledger.Balance < transaction.Amount)
                 {
                     throw new InvalidOperationException($"Insufficient balance in Ledger '{ledger.Name}'.");
@@ -193,7 +182,7 @@ public class TransactionService
 
             _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
-
+            
             await UpdateLedgerBalanceAsync(transaction.LedgerId, transaction.Amount, transaction.Type, true);
 
             await _auditLog.LogAsync("Create", "Transaction", $"Created {transaction.Type} of {transaction.Amount}. ID: {transaction.Id}");
@@ -373,29 +362,11 @@ public class TransactionService
 
         if (records.Count == 0) return 0;
 
-        // Deduplication logic: Check for existing transactions to prevent balance mismatch
-        var minDate = records.Min(r => r.Date);
-        var maxDate = records.Max(r => r.Date);
-        
-        var existingTransactions = await _context.Transactions
-            .Where(t => !t.IsDeleted && t.CompanyId == _userContext.CompanyId && 
-                        t.LedgerId == ledgerId &&
-                        string.Compare(t.Date, minDate) >= 0 &&
-                        string.Compare(t.Date, maxDate) <= 0)
-            .ToListAsync();
-
-        var newRecords = records.Where(r => !existingTransactions.Any(e => 
-            e.Date == r.Date && 
-            e.Amount == r.Amount && 
-            e.Description == r.Description)).ToList();
-
-        if (newRecords.Count == 0) return 0;
-
         using var dbTransaction = await _context.Database.BeginTransactionAsync();
         try
         {
             // Set context for all records
-            foreach (var record in newRecords)
+            foreach (var record in records)
             {
                 record.CreatedAt = DateTime.UtcNow;
                 record.UpdatedAt = DateTime.UtcNow;
@@ -403,11 +374,11 @@ public class TransactionService
             }
 
             // 1. Bulk insert transactions
-            _context.Transactions.AddRange(newRecords);
+            _context.Transactions.AddRange(records);
             await _context.SaveChangesAsync();
 
             // 2. Batch update ledger balances
-            var ledgerGroups = newRecords
+            var ledgerGroups = records
                 .Where(r => r.LedgerId.HasValue)
                 .GroupBy(r => new { r.LedgerId, r.Type });
 
@@ -418,7 +389,7 @@ public class TransactionService
             }
 
             // 3. Single audit log for the whole operation
-            await _auditLog.LogAsync("Import", "Transaction", $"Bulk imported {newRecords.Count} transactions (Skipped {records.Count - newRecords.Count} duplicates) via file.");
+            await _auditLog.LogAsync("Import", "Transaction", $"Bulk imported {records.Count} transactions via file.");
 
             await dbTransaction.CommitAsync();
             return records.Count;

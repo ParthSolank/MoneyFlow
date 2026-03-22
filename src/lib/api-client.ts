@@ -206,12 +206,14 @@ export const transactionApi = {
             formData.append('ledgerId', ledgerId.toString());
         }
 
+        const token = localStorage.getItem('token');
         const companyId = localStorage.getItem('companyId');
         const baseUrl = API_BASE_URL;
 
         const response = await fetch(`${baseUrl}/Transactions/import`, {
             method: 'POST',
             headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                 ...(companyId ? { 'X-Company-Id': companyId } : {})
             },
             body: formData,
@@ -226,12 +228,14 @@ export const transactionApi = {
 
     // Download PDF
     generatePdf: async (id: number): Promise<Blob> => {
+        const token = localStorage.getItem('token');
         const companyId = localStorage.getItem('companyId');
         const baseUrl = API_BASE_URL;
 
         const response = await fetch(`${baseUrl}/Transactions/${id}/pdf`, {
             method: 'GET',
             headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                 ...(companyId ? { 'X-Company-Id': companyId } : {})
             },
             credentials: 'include', // Support HttpOnly cookies
@@ -417,5 +421,3 @@ export const budgetApi = {
         return api.delete(`/Budgets/${id}`);
     }
 };
-
-/* aria-label */

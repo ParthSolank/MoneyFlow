@@ -140,5 +140,3 @@ export default function SystemAuditPage() {
         </motion.div>
     );
 }
-
-/* aria-label */

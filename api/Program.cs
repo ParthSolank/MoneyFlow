@@ -84,17 +84,23 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowNextJs", policy =>
     {
-        var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? (builder.Environment.IsDevelopment() ? "http://localhost:3000" : "https://moneyflow-live.vercel.app");
-        var origins = frontendUrl.Split(',', StringSplitOptions.RemoveEmptyEntries);
-
-        policy.SetIsOriginAllowed(origin => 
-              {
-                  var host = new Uri(origin).Host;
-                  return host == "localhost" || host == "127.0.0.1" || host.EndsWith(".vercel.app") || host == "moneyflow-live.vercel.app";
-              })
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(_ => true)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
+        else
+        {
+            var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? "https://moneyflow-live.vercel.app";
+            var origins = frontendUrl.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            
+            policy.WithOrigins(origins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
     });
 });
 
@@ -181,7 +187,7 @@ app.MapGet("/health", () => Results.Ok(new
 }));
 
 Console.WriteLine("🚀 MoneyFlow Pro API is starting...");
-Console.WriteLine("📊 Swagger UI available at: http://moneyflowapi.runasp.net");
+Console.WriteLine("📊 Swagger UI available at: http://127.0.0.1:5039 or https://localhost:7228");
 Console.WriteLine("💡 Run 'dotnet ef database update' to create/update the database");
 
 // Seed Database with initial user
@@ -196,13 +202,33 @@ using (var scope = app.Services.CreateScope())
         // This is better for production than EnsureCreated() as it supports schema evolution
         context.Database.Migrate(); 
 
-        var authService = services.GetRequiredService<IAuthService>();
-        await authService.SeedMasterAsync();
 
-        // Seed database initialization - remove hardcoded credentials
-        // Admin users should be created through secure registration flow
-        Console.WriteLine("✅ Database migrated successfully and master account seeded");
-
+        if (!context.Users.Any())
+        {
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword("password123");
+            context.Users.Add(new User
+            {
+                Username = "admin",
+                Email = "admin@demo.com",
+                PasswordHash = passwordHash,
+                Role = "Admin",
+                Rights = new List<string> { "VIEW_REPORTS", "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE", "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE" },
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+            context.SaveChanges();
+            Console.WriteLine("✅ Seeded initial admin user: admin@demo.com / password123");
+        }
+        else
+        {
+            var adminUser = context.Users.FirstOrDefault(u => u.Email == "admin@demo.com");
+            if (adminUser != null)
+            {
+                adminUser.Rights = new List<string> { "VIEW_REPORTS", "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE", "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE" };
+                context.Users.Update(adminUser);
+                context.SaveChanges();
+            }
+        }
     }
     catch (Exception ex)
     {

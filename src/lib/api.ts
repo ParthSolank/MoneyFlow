@@ -1,7 +1,7 @@
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 export const API_BASE_URL = (BASE_URL.toLowerCase().endsWith('/api') || BASE_URL.toLowerCase().includes('/api/'))
     ? BASE_URL.replace(/\/$/, '')
-    : `/api`; 
+    : `/api/api`; 
 
 console.log(`[API] Base URL: ${BASE_URL || '(relative)'}`);
 console.log(`[API] API Base URL: ${API_BASE_URL}`);
@@ -14,34 +14,31 @@ let isRedirecting = false;
 
 async function fetchWithAuth(url: string, options: RequestOptions = {}) {
     const isServer = typeof window === 'undefined';
+    const token = isServer ? null : localStorage.getItem('token');
     const storedId = isServer ? null : localStorage.getItem('companyId');
     const companyId = (storedId && storedId !== "null" && storedId !== "undefined") ? storedId : null;
 
     const headers = {
         'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...(companyId && { 'X-Company-Id': companyId }),
         ...options.headers,
     };
 
     const fullUrl = `${API_BASE_URL}${url}`;
     if (!isServer) {
-        console.log(`[API] [${options.method || 'GET'}] ${fullUrl}`, {
-            companyId
+        console.log(`[API] [${options.method || 'GET'}] ${fullUrl}`, { 
+            hasToken: !!token, 
+            companyId 
         });
     }
 
     try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
         const response = await fetch(fullUrl, {
             ...options,
             headers,
             credentials: 'include',
-            signal: controller.signal,
         });
-
-        clearTimeout(timeoutId);
 
         if (!isServer) {
             console.log(`[API] Response ${response.status} for ${url}`);
@@ -50,24 +47,26 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
         if (response.status === 401 && !isServer) {
             // Don't intercept 401s on auth routes, let the component handle the specific active/unauthorized message
             const lowerUrl = url.toLowerCase();
-            if (lowerUrl.includes('/auth/login') || lowerUrl.includes('/auth/register') || lowerUrl.includes('/auth/activate') || lowerUrl.includes('/auth/resend-activation-email')) {
+            if (lowerUrl.includes('/auth/login') || lowerUrl.includes('/auth/register') || lowerUrl.includes('/auth/activate')) {
                 return response;
             }
 
             try {
+                const oldToken = localStorage.getItem('token');
                 const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        ...(oldToken && { Authorization: `Bearer ${oldToken}` }),
                     },
                     credentials: 'include',
-                    body: JSON.stringify({}),
+                    body: JSON.stringify({ token: oldToken }),
                 });
 
                 if (refreshResponse.ok) {
                     const data = await refreshResponse.json();
-                    // Access token is now set as HttpOnly cookie by backend, no need to update localStorage
-                    const newHeaders = { ...headers };
+                    localStorage.setItem('token', data.token);
+                    const newHeaders = { ...headers, Authorization: `Bearer ${data.token}` };
                     return await fetch(`${API_BASE_URL}${url}`, { ...options, headers: newHeaders, credentials: 'include' });
                 } else {
                     handleLogout();
@@ -81,10 +80,6 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
 
         return response;
     } catch (error: any) {
-        if (error.name === 'AbortError') {
-            console.error("API request timeout after 30 seconds");
-            throw new Error("Request timeout - please check your connection and try again");
-        }
         if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
             console.error("CRITICAL: API is unreachable. Please ensure the backend server is running.");
         }
@@ -95,9 +90,9 @@ async function fetchWithAuth(url: string, options: RequestOptions = {}) {
 function handleLogout() {
     if (isRedirecting || typeof window === 'undefined') return;
     isRedirecting = true;
+    localStorage.removeItem('token');
     localStorage.removeItem('companyId');
-    // Cookies are cleared by the backend via Set-Cookie headers
-    // Access token cookie is automatically sent to browser with max-age=0 to delete
+    // Force a small delay to ensure state is cleared before redirect
     setTimeout(() => {
         if (window.location.pathname !== '/login') {
             window.location.href = '/login';
@@ -127,7 +122,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
         throw new Error(errorMsg);
     }
-    if (res.status === 204) return {} as T;
+    if (res.status === 204 || res.status === 244) return {} as T;
     return text ? JSON.parse(text) : {} as T;
 }
 
@@ -136,15 +131,15 @@ export const api = {
         const res = await fetchWithAuth(url);
         return handleResponse<T>(res);
     },
-    post: async <T>(url: string, body: Record<string, unknown> | unknown): Promise<T> => {
+    post: async <T>(url: string, body: any): Promise<T> => {
         const res = await fetchWithAuth(url, { method: 'POST', body: JSON.stringify(body) });
         return handleResponse<T>(res);
     },
-    put: async <T>(url: string, body: Record<string, unknown> | unknown): Promise<T> => {
+    put: async <T>(url: string, body: any): Promise<T> => {
         const res = await fetchWithAuth(url, { method: 'PUT', body: JSON.stringify(body) });
         return handleResponse<T>(res);
     },
-    patch: async <T>(url: string, body: Record<string, unknown> | unknown): Promise<T> => {
+    patch: async <T>(url: string, body: any): Promise<T> => {
         const res = await fetchWithAuth(url, { method: 'PATCH', body: JSON.stringify(body) });
         return handleResponse<T>(res);
     },

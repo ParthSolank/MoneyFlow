@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://moneyflowapi.runasp.net/api/:path*',
+        destination: 'http://moneyflowapi.runasp.net/:path*',
       },
     ];
   },

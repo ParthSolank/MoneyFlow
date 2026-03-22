@@ -13,7 +13,7 @@ export function SmartInsights() {
     return (
       <Card className="border-0 shadow-lg bg-white/50 backdrop-blur-sm">
         <CardContent className="p-8 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
         </CardContent>
       </Card>
     )
@@ -24,8 +24,8 @@ export function SmartInsights() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 px-1">
-        <div className="p-1.5 bg-emerald-100 rounded-lg">
-          <Sparkles className="h-4 w-4 text-emerald-600" />
+        <div className="p-1.5 bg-purple-100 rounded-lg">
+          <Sparkles className="h-4 w-4 text-purple-600" />
         </div>
         <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500">Smart Insights</h2>
       </div>
@@ -44,7 +44,7 @@ function InsightCard({ insight, index }: { insight: SmartInsight; index: number 
     success: { icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
     warning: { icon: AlertCircle, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100" },
     info: { icon: TrendingUp, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
-    goal: { icon: Target, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+    goal: { icon: Target, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-100" },
   }
 
   const { icon: Icon, color, bg, border } = config[insight.type] || config.info
@@ -70,5 +70,3 @@ function InsightCard({ insight, index }: { insight: SmartInsight; index: number 
     </motion.div>
   )
 }
-
-/* aria-label */
