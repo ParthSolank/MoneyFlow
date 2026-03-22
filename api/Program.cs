@@ -203,7 +203,21 @@ using (var scope = app.Services.CreateScope())
         context.Database.Migrate(); 
 
 
-        if (!context.Users.Any())
+        // Simplified Core Rights List for Admin
+        var adminRights = new List<string> 
+        { 
+            "CORE_DASHBOARD_VIEW", "CORE_DASHBOARD_CREATE", "CORE_DASHBOARD_EDIT", "CORE_DASHBOARD_DELETE",
+            "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE",
+            "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE",
+            "CORE_CATEGORIES_VIEW", "CORE_CATEGORIES_CREATE", "CORE_CATEGORIES_EDIT", "CORE_CATEGORIES_DELETE",
+            "CORE_BUDGETS_VIEW", "CORE_BUDGETS_CREATE", "CORE_BUDGETS_EDIT", "CORE_BUDGETS_DELETE",
+            "CORE_GOALS_VIEW", "CORE_GOALS_CREATE", "CORE_GOALS_EDIT", "CORE_GOALS_DELETE",
+            "CORE_RECURRING_VIEW", "CORE_RECURRING_CREATE", "CORE_RECURRING_EDIT", "CORE_RECURRING_DELETE"
+        };
+
+        var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@demo.com");
+        
+        if (adminUser == null)
         {
             var passwordHash = BCrypt.Net.BCrypt.HashPassword("password123");
             context.Users.Add(new User
@@ -212,22 +226,23 @@ using (var scope = app.Services.CreateScope())
                 Email = "admin@demo.com",
                 PasswordHash = passwordHash,
                 Role = "Admin",
-                Rights = new List<string> { "VIEW_REPORTS", "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE", "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE" },
+                IsActive = true, // Ensure seeded user is active
+                Rights = adminRights,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });
-            context.SaveChanges();
-            Console.WriteLine("✅ Seeded initial admin user: admin@demo.com / password123");
+            await context.SaveChangesAsync();
+            Console.WriteLine("✅ Created initial admin user: admin@demo.com / password123");
         }
         else
         {
-            var adminUser = context.Users.FirstOrDefault(u => u.Email == "admin@demo.com");
-            if (adminUser != null)
-            {
-                adminUser.Rights = new List<string> { "VIEW_REPORTS", "CORE_TRANSACTIONS_VIEW", "CORE_TRANSACTIONS_CREATE", "CORE_TRANSACTIONS_EDIT", "CORE_TRANSACTIONS_DELETE", "CORE_LEDGERS_VIEW", "CORE_LEDGERS_CREATE", "CORE_LEDGERS_EDIT", "CORE_LEDGERS_DELETE" };
-                context.Users.Update(adminUser);
-                context.SaveChanges();
-            }
+            // Ensure existing admin has proper role and full rights
+            adminUser.Role = "Admin";
+            adminUser.IsActive = true;
+            adminUser.Rights = adminRights;
+            context.Users.Update(adminUser);
+            await context.SaveChangesAsync();
+            Console.WriteLine("✅ Updated existing admin user rights.");
         }
     }
     catch (Exception ex)
