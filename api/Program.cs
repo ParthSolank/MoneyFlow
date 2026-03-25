@@ -199,13 +199,19 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<MoneyFlowDbContext>();
         
         // Ensure database is created and all migrations are applied
-        // This is better for production than EnsureCreated() as it supports schema evolution
-        context.Database.Migrate(); 
-
+        try 
+        {
+            context.Database.Migrate(); 
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Migration warning: {ex.Message}");
+            // Continue to seeder anyway
+        }
 
         // Use environment variables for admin credentials with fallbacks
-        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@demo.com";
-        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "password123";
+        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "parth@gmail.com";
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "123456789@@";
 
         // Full Core Rights List for Admin
         var adminRights = new List<string> 
