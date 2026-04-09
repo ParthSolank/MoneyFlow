@@ -58,4 +58,7 @@ api/build_log*.txt
 api/build_error.log
 api/build-output.txt
 api/Properties/launchSettings.json
-api/appsettings.Development.json
+api/appsettings.Development.json-e 
+# Environment files
+*.env
+*.env.*
