@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from 'swr';
-import { ledgerApi } from '@/lib/api-client';
+import { ledgerApi } from '@/lib/supabase-client';
  
 const EMPTY_ARRAY: any[] = [];
 
@@ -10,8 +10,8 @@ const EMPTY_ARRAY: any[] = [];
  */
 export function useLedgers() {
     const { data, error, isLoading, mutate } = useSWR(
-        'api/ledgers',
-        () => ledgerApi.getAll()
+        'supabase/ledgers',
+        async () => await ledgerApi.getAll()
     );
 
     return {

@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Wallet, ArrowRight, Loader2 } from "lucide-react";
@@ -52,15 +51,11 @@ export default function RegisterPage() {
     async function onSubmit(values: z.infer<typeof registerSchema>) {
         setIsLoading(true);
         try {
-            await api.post<any>("/auth/register", {
-                username: values.username,
-                email: values.email,
-                password: values.password,
-            });
+            await register(values.email, values.password, values.username);
 
             toast({
                 title: "Account Created! 🎉",
-                description: "You can now log in to your account.",
+                description: "Please check your email to verify your account.",
                 className: "bg-indigo-50 border-indigo-200 text-indigo-900",
             });
 
@@ -71,7 +66,7 @@ export default function RegisterPage() {
             toast({
                 variant: "destructive",
                 title: "Registration failed",
-                description: error.message,
+                description: error.message || "An error occurred during registration",
             });
         } finally {
             setIsLoading(false);

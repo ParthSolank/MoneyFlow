@@ -1,8 +1,7 @@
 "use client";
 
 import useSWR from 'swr';
-import { transactionApi, Transaction } from '@/lib/api-client';
-import { api } from '@/lib/api';
+import { transactionApi, Transaction } from '@/lib/supabase-client';
  
 const EMPTY_ARRAY: Transaction[] = [];
 
@@ -16,18 +15,23 @@ export function useTransactions(startDate?: string, endDate?: string, page: numb
     queryParams.append('page', page.toString());
     queryParams.append('pageSize', pageSize.toString());
 
-    const cacheKey = `api/transactions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const cacheKey = `supabase/transactions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
     const { data, error, isLoading, mutate } = useSWR(
         cacheKey,
-        () => {
+        async () => {
             if (startDate && endDate) {
-                // Currently getByDateRange doesn't use pagination in the backend, but we pass it anyway for consistency
-                return transactionApi.getByDateRange(startDate, endDate);
+                return await transactionApi.getByDateRange(startDate, endDate);
             }
-            // For standard getAll, we should pass pagination if we update the API client, 
-            // but for now the SWR key change will force re-fetch and the API uses query params
-            return api.get(`/Transactions?page=${page}&pageSize=${pageSize}`);
+            // For pagination, we get all and slice in-memory (can be optimized with Supabase range)
+            const all = await transactionApi.getAll();
+            const from = (page - 1) * pageSize;
+            const to = from + pageSize;
+            return {
+                items: all.slice(from, to),
+                totalCount: all.length,
+                totalPages: Math.ceil(all.length / pageSize),
+            };
         },
         {
             revalidateOnFocus: false,

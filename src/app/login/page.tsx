@@ -17,10 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Wallet, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -30,6 +30,7 @@ const loginSchema = z.object({
 export default function LoginPage() {
   const { login } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -43,19 +44,20 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
     try {
-      const data = await api.post<any>("/Auth/login", values);
-      login(data.token);
+      await login(values.email, values.password);
 
       toast({
         title: "Welcome back! 👋",
         description: "You have successfully logged in.",
         className: "bg-green-50 border-green-200 text-green-900",
       });
+
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: error.message,
+        description: error.message || "Invalid email or password",
       });
     } finally {
       setIsLoading(false);

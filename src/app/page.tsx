@@ -9,7 +9,7 @@ import { ReceiptText, TrendingUp, NotebookTabs, ArrowUpRight, ArrowDownRight, Wa
 import { useTransactions } from "@/hooks/use-transactions";
 import { useLedgers } from "@/hooks/use-ledgers";
 import { useAuth } from "@/context/auth-context";
-import { userApi, budgetApi, BudgetStatus, Transaction, Ledger } from "@/lib/api-client";
+import { userApi, budgetApi, BudgetStatus, Transaction, Ledger } from "@/lib/supabase-client";
 import { usePermissions } from "@/hooks/use-permissions";
 import { FYSelector } from "@/components/fy-selector";
 import { SmartInsights } from "@/components/dashboard/smart-insights";

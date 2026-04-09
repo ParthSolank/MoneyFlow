@@ -2,11 +2,18 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { jwtDecode } from 'jwt-decode';
-import { api } from "@/lib/api";
+import { supabase } from '@/lib/supabase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+
+interface UserProfile {
+    username: string;
+    role: string;
+    rights: string[];
+    company_id?: string;
+}
 
 interface User {
-    id: number;
+    id: string;
     username: string;
     email: string;
     role: string;
@@ -16,96 +23,160 @@ interface User {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (token: string) => void;
-    register: (token: string) => void;
+    login: (email: string, password: string) => Promise<void>;
+    register: (email: string, password: string, username: string) => Promise<void>;
     logout: () => Promise<void>;
-    companyId: number | null;
-    setCompanyId: (id: number | null) => void;
+    companyId: string | null;
+    setCompanyId: (id: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-function getUserFromToken(token: string): User | null {
-    try {
-        const decoded: any = jwtDecode(token);
-        const id = decoded.sub || decoded.nameid || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
-        const username = decoded.unique_name || decoded.name || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
-        const email = decoded.email || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
-        const role = decoded.role || decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-        const rights = decoded.Right || decoded.rights || [];
-        const rightsArray = Array.isArray(rights) ? rights : [rights];
-
-        if (!id) return null;
-
-        return {
-            id: typeof id === 'string' ? parseInt(id) : id,
-            username: username || 'User',
-            email: email || '',
-            role: role || 'User',
-            rights: rightsArray
-        };
-    } catch (error) {
-        return null;
-    }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
-    const [companyId, setCompanyIdState] = useState<number | null>(null);
+    const [companyId, setCompanyIdState] = useState<string | null>(null);
     const router = useRouter();
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        const storedCompanyId = localStorage.getItem('companyId');
+    // Fetch user profile data
+    const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
+        try {
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('username, role, rights, company_id')
+                .eq('id', userId)
+                .single();
 
-        if (storedCompanyId) {
-            setCompanyIdState(parseInt(storedCompanyId));
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            return null;
         }
+    };
 
-        if (token) {
-            const userData = getUserFromToken(token);
-            if (userData) {
-                setUser(userData);
-            } else {
-                localStorage.removeItem('token');
+    // Load session on mount
+    useEffect(() => {
+        const loadUser = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session?.user) {
+                    const profile = await fetchUserProfile(session.user.id);
+                    setUser({
+                        id: session.user.id,
+                        username: profile?.username || session.user.email?.split('@')[0] || 'User',
+                        email: session.user.email || '',
+                        role: profile?.role || 'User',
+                        rights: profile?.rights || [],
+                    });
+
+                    if (profile?.company_id) {
+                        setCompanyIdState(profile.company_id);
+                        localStorage.setItem('companyId', profile.company_id);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadUser();
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session?.user) {
+                const profile = await fetchUserProfile(session.user.id);
+                setUser({
+                    id: session.user.id,
+                    username: profile?.username || session.user.email?.split('@')[0] || 'User',
+                    email: session.user.email || '',
+                    role: profile?.role || 'User',
+                    rights: profile?.rights || [],
+                });
+
+                if (profile?.company_id) {
+                    setCompanyIdState(profile.company_id);
+                    localStorage.setItem('companyId', profile.company_id);
+                }
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null);
+                setCompanyIdState(null);
+                localStorage.removeItem('companyId');
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, []);
+
+    const login = React.useCallback(async (email: string, password: string) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+            const profile = await fetchUserProfile(data.user.id);
+            setUser({
+                id: data.user.id,
+                username: profile?.username || data.user.email?.split('@')[0] || 'User',
+                email: data.user.email || '',
+                role: profile?.role || 'User',
+                rights: profile?.rights || [],
+            });
+
+            if (profile?.company_id) {
+                setCompanyIdState(profile.company_id);
+                localStorage.setItem('companyId', profile.company_id);
             }
         }
-        setLoading(false);
     }, []);
 
-    const login = React.useCallback((token: string) => {
-        localStorage.setItem('token', token);
-        const userData = getUserFromToken(token);
-        setUser(userData);
-        // We handle navigation in AppShell or the login page itself to avoid double push
+    const register = React.useCallback(async (email: string, password: string, username: string) => {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    username: username,
+                }
+            }
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+            const profile = await fetchUserProfile(data.user.id);
+            setUser({
+                id: data.user.id,
+                username: profile?.username || username || data.user.email?.split('@')[0] || 'User',
+                email: data.user.email || '',
+                role: profile?.role || 'User',
+                rights: profile?.rights || [],
+            });
+        }
     }, []);
 
-    const register = React.useCallback((token: string) => {
-        localStorage.setItem('token', token);
-        const userData = getUserFromToken(token);
-        setUser(userData);
-    }, []);
-
-    const setCompanyId = React.useCallback((id: number | null) => {
+    const setCompanyId = React.useCallback((id: string | null) => {
         setCompanyIdState(id);
         if (id) {
-            localStorage.setItem('companyId', id.toString());
+            localStorage.setItem('companyId', id);
         } else {
             localStorage.removeItem('companyId');
         }
     }, []);
 
     const logout = React.useCallback(async () => {
-        try {
-            await api.post('/auth/logout', {});
-        } catch (error) {
-            console.error('Failed to logout from server', error);
-        }
-        localStorage.removeItem('token');
-        localStorage.removeItem('companyId');
+        await supabase.auth.signOut();
         setUser(null);
         setCompanyIdState(null);
+        localStorage.removeItem('companyId');
         router.replace('/login');
     }, [router]);
 
