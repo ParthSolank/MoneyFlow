@@ -76,13 +76,13 @@ export default function Dashboard() {
 
   return (
 
-    <div className="space-y-6 p-1 pb-24">
+    <div className="space-y-4 p-1 pb-24">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 leading-none">
+          <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 leading-none">
             Financial Overview
           </h1>
-          <p className="text-muted-foreground text-lg mt-2">
+          <p className="text-muted-foreground text-sm mt-2">
             Monitor your wealth and cash flow {selectedFY.label !== 'All Time' ? `for ${selectedFY.label}` : 'across all time'}.
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function Dashboard() {
           <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden relative group">
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute -right-12 -top-12 h-64 w-64 bg-white/10 rounded-full blur-3xl opacity-50" />
-            <CardContent className="p-8 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+            <CardContent className="p-5 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 justify-center md:justify-start">
                   <div className="p-2 bg-white/20 rounded-lg backdrop-blur-md">
@@ -113,23 +113,23 @@ export default function Dashboard() {
                   </Badge>
                 </div>
                 <div className="space-y-1">
-                  <h2 className="text-3xl font-black tracking-tight leading-none uppercase">Step 1: Setup Accounts</h2>
-                  <p className="text-lg text-indigo-100 max-w-xl font-medium pt-2">
+                  <h2 className="text-xl font-black tracking-tight leading-none uppercase">Step 1: Setup Accounts</h2>
+                  <p className="text-sm text-indigo-100 max-w-xl font-medium pt-2">
                     MoneyFlow works best when you link your Bank, Cash, or Credit accounts first.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-4 pt-4 justify-center md:justify-start">
-                   <a href="/ledgers" className="px-6 py-3 bg-white text-indigo-600 font-black text-sm uppercase tracking-wider rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all transform hover:scale-105 active:scale-95">
+                   <a href="/ledgers" className="px-4 py-2 bg-white text-indigo-600 font-black text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all transform hover:scale-105 active:scale-95">
                       Get Started Now
                    </a>
-                   <a href="/transactions" className="px-6 py-3 bg-white/10 border border-white/20 text-white font-bold text-sm uppercase tracking-wider rounded-xl backdrop-blur-sm hover:bg-white/20 transition-all flex items-center gap-2">
+                   <a href="/transactions" className="px-4 py-2 bg-white/10 border border-white/20 text-white font-bold text-xs uppercase tracking-wider rounded-xl backdrop-blur-sm hover:bg-white/20 transition-all flex items-center gap-2">
                       <ReceiptText className="h-4 w-4" /> Quick Import
                    </a>
                 </div>
               </div>
               <div className="hidden lg:block relative">
-                 <div className="h-48 w-48 bg-white/10 rounded-3xl rotate-12 flex items-center justify-center backdrop-blur-md border border-white/20 shadow-2xl">
-                    <Wallet className="h-24 w-24 text-white opacity-90 transition-transform group-hover:rotate-0 duration-500" />
+                 <div className="h-32 w-32 bg-white/10 rounded-2xl rotate-12 flex items-center justify-center backdrop-blur-md border border-white/20 shadow-2xl">
+                    <Wallet className="h-14 w-14 text-white opacity-90 transition-transform group-hover:rotate-0 duration-500" />
                  </div>
               </div>
             </CardContent>
@@ -140,7 +140,7 @@ export default function Dashboard() {
 
       <CashFlowCalendar />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 2xl:grid-cols-12">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 2xl:grid-cols-12">
         <div className="lg:col-span-4 2xl:col-span-8 h-full">
           <Card className="h-full border-0 shadow-lg bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800">
             <CardHeader>
@@ -222,7 +222,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {loadingLedgers ? (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
                     <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
@@ -328,7 +328,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div className="bg-white/60 dark:bg-gray-800/40 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/20 backdrop-blur-sm">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600">

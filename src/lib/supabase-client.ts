@@ -169,10 +169,48 @@ export interface RecurringTransaction {
 // HELPER FUNCTIONS
 // ============================================
 
+let activeAuthPromise: Promise<string | null> | null = null;
+
+const getMaybeUserId = async (): Promise<string | null> => {
+    if (activeAuthPromise) return activeAuthPromise;
+
+    activeAuthPromise = (async () => {
+        try {
+            // 1. FAST PATH: Check local session first (no network request)
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) return session.user.id;
+
+            // 2. SLOW PATH: Verify with server if local session is missing
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Auth Timeout')), 2000)
+            );
+
+            const userPromise = supabase.auth.getUser();
+            
+            try {
+                const result: any = await Promise.race([userPromise, timeoutPromise]);
+                return result.data?.user?.id || null;
+            } catch (e) {
+                console.warn("[Auth] getUser failed or timed out, returning null session");
+                return null;
+            }
+        } catch (error) {
+            console.error("[Auth] getMaybeUserId error:", error);
+            return null;
+        } finally {
+            // Clear current promise after a short delay to allow batching
+            // but ensuring subsequent separate user interactions get fresh state
+            setTimeout(() => { activeAuthPromise = null; }, 100);
+        }
+    })();
+
+    return activeAuthPromise;
+};
+
 const getCurrentUserId = async (): Promise<string> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-    return user.id;
+    const userId = await getMaybeUserId();
+    if (!userId) throw new Error('User not authenticated');
+    return userId;
 };
 
 const mapTransactionFromDb = (tx: any): Transaction => ({
@@ -207,7 +245,9 @@ const mapLedgerFromDb = (ledger: any): Ledger => ({
 export const transactionApi = {
     // Get all transactions
     getAll: async (): Promise<Transaction[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+
         const { data, error } = await supabase
             .from('transactions')
             .select('*')
@@ -234,7 +274,9 @@ export const transactionApi = {
 
     // Get transactions by type
     getByType: async (type: 'income' | 'expense'): Promise<Transaction[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+
         const { data, error } = await supabase
             .from('transactions')
             .select('*')
@@ -248,7 +290,9 @@ export const transactionApi = {
 
     // Get transactions by payment method
     getByPaymentMethod: async (method: 'bank' | 'credit' | 'cash'): Promise<Transaction[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+
         const { data, error } = await supabase
             .from('transactions')
             .select('*')
@@ -262,7 +306,9 @@ export const transactionApi = {
 
     // Get transactions by category
     getByCategory: async (category: string): Promise<Transaction[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+
         const { data, error } = await supabase
             .from('transactions')
             .select('*')
@@ -310,7 +356,9 @@ export const transactionApi = {
 
     // Get transactions by date range
     getByDateRange: async (startDate: string, endDate: string): Promise<Transaction[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+
         const { data, error } = await supabase
             .from('transactions')
             .select('*')
@@ -493,7 +541,9 @@ export const transactionApi = {
 export const ledgerApi = {
     // Get all ledgers
     getAll: async (): Promise<Ledger[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+
         const { data, error } = await supabase
             .from('ledgers')
             .select('*')
@@ -625,7 +675,9 @@ export const ledgerApi = {
 
 export const categoryApi = {
     getAll: async (): Promise<Category[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+
         const { data, error } = await supabase
             .from('categories')
             .select('*')
@@ -944,7 +996,9 @@ export const auditApi = {
 
 export const companyApi = {
     getAll: async (): Promise<Company[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+        
         const { data, error } = await supabase
             .from('companies')
             .select('*')
@@ -1170,7 +1224,9 @@ export const financialYearApi = {
 
 export const goalApi = {
     getAll: async (): Promise<Goal[]> => {
-        const userId = await getCurrentUserId();
+        const userId = await getMaybeUserId();
+        if (!userId) return [];
+
         const { data, error } = await supabase
             .from('goals')
             .select('*')

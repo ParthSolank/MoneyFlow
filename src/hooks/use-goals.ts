@@ -1,11 +1,13 @@
 import useSWR from 'swr';
 import { goalApi, Goal, GoalContribution } from '@/lib/supabase-client';
+import { useAuth } from '@/context/auth-context';
 
 export type { Goal, GoalContribution };
 
 export function useGoals() {
+  const { user } = useAuth();
   const { data, error, mutate } = useSWR<Goal[]>(
-    'supabase/goals', 
+    user ? `supabase/goals/${user.id}` : null, 
     async () => await goalApi.getAll()
   );
 

@@ -31,7 +31,7 @@ import { useAuth } from "@/context/auth-context";
 export default function CategoriesPage() {
     const { toast } = useToast();
     const { canCreate, canEdit, canDelete } = usePermissions();
-    const { user } = useAuth();
+    const { user, loading } = useAuth();
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -58,10 +58,16 @@ export default function CategoriesPage() {
         keywords: "",
         parentId: null
     });
-
+    
     useEffect(() => {
-        fetchCategories();
-    }, []);
+        if (!loading) {
+            if (user) {
+                fetchCategories();
+            } else {
+                setIsLoading(false);
+            }
+        }
+    }, [user, loading]);
 
     const fetchCategories = async () => {
         try {

@@ -34,7 +34,7 @@ import { useAuth } from "@/context/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
 
 export default function TransactionsPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { canCreate, canEdit, canDelete } = usePermissions();
 
   const [selectedFY, setSelectedFY] = useState(getCurrentFinancialYear());
@@ -68,16 +68,18 @@ export default function TransactionsPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    import("@/lib/supabase-client").then(({ ledgerApi, categoryApi }) => {
-      ledgerApi.getAll().then((data) => {
-        setLedgers(data);
-      }).catch(console.error);
+    if (!loading && user) {
+      import("@/lib/supabase-client").then(({ ledgerApi, categoryApi }) => {
+        ledgerApi.getAll().then((data) => {
+          setLedgers(data);
+        }).catch(console.error);
 
-      categoryApi.getAll().then((data) => {
-        setDbCategories(data);
-      }).catch(console.error);
-    });
-  }, [])
+        categoryApi.getAll().then((data) => {
+          setDbCategories(data);
+        }).catch(console.error);
+      });
+    }
+  }, [user, loading])
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t: Transaction) => {

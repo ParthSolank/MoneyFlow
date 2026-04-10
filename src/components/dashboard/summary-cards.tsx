@@ -56,16 +56,16 @@ export function SummaryCards({ startDate, endDate }: SummaryCardsProps) {
       {stats.map((stat) => (
         <Card key={stat.title} className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white/50 backdrop-blur-sm ring-1 ring-gray-100 dark:bg-gray-900/50 dark:ring-gray-800 overflow-hidden relative group">
           <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500`}>
-            <stat.icon className={`h-24 w-24 ${stat.color}`} />
+            <stat.icon className={`h-16 w-16 ${stat.color}`} />
           </div>
-          <CardContent className="p-6 relative z-10">
+          <CardContent className="p-4 relative z-10">
             <div className="flex items-center justify-between space-y-0 pb-2">
               <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
               <div className={`p-2 rounded-lg ${stat.bg}`}>
                 {isLoading ? <Loader2 className={`h-4 w-4 animate-spin ${stat.color}`} /> : <stat.icon className={`h-4 w-4 ${stat.color}`} />}
               </div>
             </div>
-            <div className="text-2xl font-bold mt-2 text-gray-900 dark:text-gray-100 uppercase tracking-tight">
+            <div className="text-xl font-bold mt-2 text-gray-900 dark:text-gray-100 uppercase tracking-tight">
               {isLoading ? (
                 <div className="h-8 w-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-md" />
               ) : stat.value}

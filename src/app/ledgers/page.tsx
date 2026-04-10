@@ -28,7 +28,7 @@ import { useAuth } from "@/context/auth-context"
 import { usePermissions } from "@/hooks/use-permissions"
 
 export default function LedgersPage() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const { canCreate, canEdit, canDelete } = usePermissions();
 
   const [ledgers, setLedgers] = useState<Ledger[]>([])
@@ -64,8 +64,14 @@ export default function LedgersPage() {
   }
 
   useEffect(() => {
-    fetchLedgers()
-  }, [])
+    if (!loading) {
+      if (user) {
+        fetchLedgers()
+      } else {
+        setIsLoading(false)
+      }
+    }
+  }, [user, loading])
 
   // Force body to unlock when dialogs close (Fixes Radix UI pointer lock bug)
   useEffect(() => {

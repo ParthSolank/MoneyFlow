@@ -2,6 +2,7 @@
 
 import useSWR from 'swr';
 import { transactionApi, Transaction } from '@/lib/supabase-client';
+import { useAuth } from '@/context/auth-context';
  
 const EMPTY_ARRAY: Transaction[] = [];
 
@@ -9,13 +10,14 @@ const EMPTY_ARRAY: Transaction[] = [];
  * Custom hook for fetching and caching transactions using SWR
  */
 export function useTransactions(startDate?: string, endDate?: string, page: number = 1, pageSize: number = 50) {
+    const { user } = useAuth();
     const queryParams = new URLSearchParams();
     if (startDate) queryParams.append('start', startDate);
     if (endDate) queryParams.append('end', endDate);
     queryParams.append('page', page.toString());
     queryParams.append('pageSize', pageSize.toString());
 
-    const cacheKey = `supabase/transactions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const cacheKey = user ? `supabase/transactions/${user.id}?${queryParams.toString()}` : null;
 
     const { data, error, isLoading, mutate } = useSWR(
         cacheKey,

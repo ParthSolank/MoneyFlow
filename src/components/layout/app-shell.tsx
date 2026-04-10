@@ -124,7 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             />
 
             <div className="flex flex-col flex-1 min-w-0 h-full relative">
-                <header className="flex h-16 shrink-0 items-center justify-between px-4 lg:px-10 border-b border-gray-100 bg-white/80 backdrop-blur-md z-30">
+                <header className="flex h-16 shrink-0 items-center justify-between px-4 lg:px-6 border-b border-gray-100 bg-white/80 backdrop-blur-md z-30">
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={() => setIsMobileMenuOpen(true)}
@@ -138,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <UserNav />
                     </div>
                 </header>
-                <main className="flex-1 overflow-y-auto p-4 lg:p-12 bg-gray-50/30">
+                <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-50/30">
                     <motion.div
                         key={pathname}
                         initial={{ opacity: 0, y: 10 }}

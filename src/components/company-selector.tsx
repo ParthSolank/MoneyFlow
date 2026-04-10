@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function CompanySelector() {
-    const { user, companyId, setCompanyId } = useAuth();
+    const { user, loading, companyId, setCompanyId } = useAuth();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
@@ -22,6 +22,7 @@ export function CompanySelector() {
     const fetchCompanies = async () => {
         try {
             console.log("[CompanySelector] Fetching companies...");
+            // Use safe getAll that returns [] instead of throwing for unauthenticated
             const data = await companyApi.getAll();
             console.log("[CompanySelector] Companies found:", data);
             setCompanies(data);
@@ -39,10 +40,36 @@ export function CompanySelector() {
     };
 
     useEffect(() => {
-        if (user) {
-            fetchCompanies();
+        let timeoutId: NodeJS.Timeout;
+
+        if (!loading) {
+            console.log("[CompanySelector] Auth loaded, user:", user?.id);
+            
+            // Set a safety timeout - 10 seconds to load companies or fail
+            timeoutId = setTimeout(() => {
+                if (isLoading) {
+                    console.warn("[CompanySelector] Safety timeout reached. Forcing loading to false.");
+                    setIsLoading(false);
+                    toast({
+                        variant: "destructive",
+                        title: "Connection Timeout",
+                        description: "Taking longer than expected to load your workspace. Please try refreshing.",
+                    });
+                }
+            }, 10000);
+
+            if (user) {
+                fetchCompanies();
+            } else {
+                console.log("[CompanySelector] No user found, stopping loader.");
+                setIsLoading(false);
+            }
         }
-    }, [user]);
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [user, loading]);
 
     const handleCreateCompany = async (e: React.FormEvent) => {
         e.preventDefault();

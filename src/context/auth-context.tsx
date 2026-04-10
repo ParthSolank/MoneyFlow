@@ -38,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [companyId, setCompanyIdState] = useState<string | null>(null);
     const router = useRouter();
 
-    // Fetch user profile data
-    const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
+    // Fetch user profile data with retry logic for new accounts
+    const fetchUserProfile = async (userId: string, retries = 3): Promise<UserProfile | null> => {
         try {
             const { data, error } = await supabase
                 .from('user_profiles')
@@ -47,10 +47,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 .eq('id', userId)
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                // PGRST116 is "The result contains 0 rows" - common during signup trigger processing
+                if (error.code === 'PGRST116' && retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    return fetchUserProfile(userId, retries - 1);
+                }
+                throw error;
+            }
             return data;
-        } catch (error) {
-            console.error('Error fetching user profile:', error);
+        } catch (error: any) {
+            // Only log actual errors, ignore "not found" after retries are exhausted
+            if (error?.code !== 'PGRST116') {
+                console.error('Error fetching user profile:', error.message || error);
+            }
             return null;
         }
     };
