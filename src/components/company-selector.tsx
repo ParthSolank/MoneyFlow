@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { companyApi, Company } from '@/lib/api-client';
+import { companyApi, Company } from '@/lib/supabase-client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

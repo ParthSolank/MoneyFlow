@@ -1,34 +1,40 @@
 # 💰 MoneyFlow Pro - Modern Personal Finance Management
 
 [![Next.js](https://img.shields.io/badge/Next.js-16--LTS-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![.NET Core](https://img.shields.io/badge/.NET_Core-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-**MoneyFlow Pro** is an enterprise-grade personal and business finance tracking application built with a modern tech stack. It combines the speed of a **Next.js** frontend with the robust reliability of a **.NET Web API** backend to provide a seamless financial management experience.
+**MoneyFlow Pro** is an enterprise-grade personal and business finance tracking application built with a modern tech stack. It combines the speed of a **Next.js** fullstack framework with the robust reliability of **Supabase** backend to provide a seamless financial management experience.
 
 ---
 
 ## ✨ Key Features
 
 ### 📊 Professional Dashboard
-*   **Real-time Analytics**: Visualise your cash flow with interactive Area and Pie charts (Recharts).
+*   **Real-time Analytics**: Visualize your cash flow with interactive Area and Pie charts (Recharts).
 *   **Spending Heatmap**: Identify peak spending days with a GitHub-style activity grid.
 *   **Wealth Mix**: Track the distribution of funds across Cash, Bank, and Credit accounts.
 
 ### 🤖 Smart Auto-Categorization
 *   **Keyword Intelligence**: Define "Smart Keywords" for categories (e.g., "Zomato", "Uber", "Amazon").
-*   **Automated Imports**: When importing Excel or CSV statements, the system automatically groups transactions into categories based on your rules.
+*   **Automated Imports**: When importing bank statements (CSV/PDF), the system automatically categorizes transactions based on intelligent keyword matching.
+
+### 📥 Bank Statement Import (NEW!)
+*   **Multi-Format Support**: Import CSV and PDF bank statements
+*   **Intelligent Parsing**: Auto-detects date, description, debit, credit columns
+*   **Auto-Categorization**: 15+ smart categories based on transaction description
+*   **Multi-Bank Support**: Works with various bank statement formats
 
 ### 📂 Advanced Transaction Management
-*   **Dual-Entry Integrity**: Every transaction automatically updates corresponding Ledger balances using atomic database operations.
-*   **Excel/CSV Import**: Batch upload statements from major banks with automated parsing.
-*   **Soft Deletion**: Never lose historical context with audit-ready soft deletions.
+*   **Dual-Entry Integrity**: Every transaction automatically updates corresponding Ledger balances using database triggers.
+*   **Batch Import**: Upload bank statements with automated parsing and preview.
+*   **Audit Trail**: Never lose historical context with comprehensive audit logging.
 
 ### 🛡️ Enterprise Control
-*   **RBAC (Role-Based Access Control)**: Administrative portal for managing users and specific permissions.
-*   **Financial Year Closing**: Secure your records by closing financial years to prevent back-dated alterations.
-*   **Audit Logging**: Comprehensive tracking of every action (Create, Update, Delete) for full transparency.
+*   **Row Level Security**: Supabase RLS ensures users only access their own data.
+*   **Financial Year Closing**: Secure your records by closing financial years.
+*   **Audit Logging**: Comprehensive tracking of every action for full transparency.
 
 ---
 
@@ -40,13 +46,14 @@
 - **Styling**: Tailwind CSS & Shadcn UI
 - **State/Fetching**: SWR (Stale-While-Revalidate)
 - **Charts**: Recharts & Lucide Icons
-- **Auth**: JWT-based Authentication with interceptors
+- **Auth**: Supabase Auth with automatic session management
 
 ### Backend
-- **Framework**: ASP.NET Core Web API (.NET 8)
-- **ORM**: Entity Framework Core
-- **Database**: SQL Server / LocalDB
-- **Processors**: ExcelDataReader & CsvHelper for mass data handling
+- **BaaS**: Supabase (Backend as a Service)
+- **Database**: PostgreSQL with Row Level Security (RLS)
+- **Auth**: Supabase Auth (Email/Password)
+- **Real-time**: PostgreSQL triggers for automatic balance updates
+- **File Parsing**: PapaParse (CSV) & pdf.js (PDF)
 
 ---
 
@@ -54,33 +61,40 @@
 
 ### Prerequisites
 - Node.js 18+
-- .NET 8/9 SDK
-- SQL Server (or LocalDB)
+- Supabase Account (free tier available)
 
-### Setup Backend (.NET API)
-1. Navigate to the `api` folder:
+### Setup
+
+1. **Clone the repository**
    ```bash
-   cd api
-   ```
-2. Update the connection string in `appsettings.json`.
-3. Run migrations and start the server:
-   ```bash
-   dotnet run
+   git clone <your-repo-url>
+   cd moneyflow-pro
    ```
 
-### Setup Frontend (Next.js)
-1. Install dependencies:
+2. **Install dependencies**
    ```bash
-   npm install
+   yarn install
    ```
-2. Configure `.env.local`:
+
+3. **Setup Supabase**
+   - Create a Supabase project at [supabase.com](https://supabase.com)
+   - Copy your project URL and anon key
+   - Run the SQL schema from `/supabase-schema.sql` in Supabase SQL Editor
+
+4. **Configure environment variables**
+   
+   Create `.env.local`:
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:5039
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    ```
-3. Launch development server:
+
+5. **Launch development server**
    ```bash
-   npm run dev
+   yarn dev
    ```
+   
+   Open [http://localhost:3000](http://localhost:3000)
 
 ---
 

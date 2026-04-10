@@ -1,64 +1,35 @@
 import useSWR from 'swr';
-import { api } from '@/lib/api';
-
-export interface Goal {
-  id: number;
-  title: string;
-  description?: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline?: string;
-  category?: string;
-  color?: string;
-  ledgerId?: number;
-  ledger?: {
-    id: number;
-    name: string;
-    accountType: string;
-  };
-}
-
-export interface GoalContribution {
-  id: number;
-  goalId: number;
-  amount: number;
-  contributionDate: string;
-  ledgerId?: number;
-  ledger?: {
-    name: string;
-  };
-  notes?: string;
-}
+import { goalApi, Goal, GoalContribution } from '@/lib/supabase-client';
 
 export function useGoals() {
   const { data, error, mutate } = useSWR<Goal[]>(
-    '/goals', 
-    async (url: string) => {
-      const res = await api.get(url);
-      return res as Goal[];
-    }
+    'supabase/goals', 
+    async () => await goalApi.getAll()
   );
 
-  const createGoal = async (goal: Partial<Goal>) => {
-    const response = await api.post('/goals', goal);
+  const createGoal = async (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const response = await goalApi.create(goal);
     mutate();
     return response;
   };
 
-  const updateGoal = async (id: number, goal: Partial<Goal>) => {
-    const response = await api.put(`/goals/${id}`, goal);
+  const updateGoal = async (id: string, goal: Partial<Goal>) => {
+    await goalApi.update(id, goal);
     mutate();
-    return response;
   };
 
-  const deleteGoal = async (id: number) => {
-    const response = await api.delete(`/goals/${id}`);
+  const deleteGoal = async (id: string) => {
+    await goalApi.delete(id);
     mutate();
-    return response;
   };
 
-  const addContribution = async (goalId: number, data: { amount: number; ledgerId?: number; notes?: string }) => {
-    const response = await api.post(`/goals/${goalId}/contributions`, data);
+  const addContribution = async (goalId: string, data: { amount: number; date: string; note?: string }) => {
+    const response = await goalApi.addContribution({
+      goalId,
+      amount: data.amount,
+      date: data.date,
+      note: data.note,
+    });
     mutate();
     return response;
   };
@@ -75,13 +46,10 @@ export function useGoals() {
   };
 }
 
-export function useGoalHistory(goalId?: number) {
+export function useGoalHistory(goalId?: string) {
   const { data, error, mutate } = useSWR<GoalContribution[]>(
-    goalId ? `/goals/${goalId}/history` : null, 
-    async (url: string) => {
-      const res = await api.get(url);
-      return res as GoalContribution[];
-    }
+    goalId ? `supabase/goals/${goalId}/history` : null, 
+    async () => goalId ? await goalApi.getContributions(goalId) : []
   );
 
   return {
@@ -98,19 +66,13 @@ export interface SmartInsight {
   message: string;
 }
 
+// Smart Insights - TODO: Implement with Supabase Edge Function or client-side logic
 export function useSmartInsights() {
-  const { data, error, mutate } = useSWR<SmartInsight[]>(
-    '/reports/smart-insights', 
-    async (url: string) => {
-      const res = await api.get(url);
-      return res as SmartInsight[];
-    }
-  );
-
+  // Placeholder - needs implementation with Supabase
   return {
-    insights: data || [],
-    isLoading: !error && !data,
-    isError: error,
-    mutate
+    insights: [] as SmartInsight[],
+    isLoading: false,
+    isError: false,
+    mutate: () => {}
   };
 }
