@@ -2,7 +2,7 @@
 "use client"
 
 import { use, useEffect, useState, useMemo } from "react"
-import { ledgerApi, transactionApi, categoryApi, Ledger, Transaction, Category } from "@/lib/api-client"
+import { ledgerApi, transactionApi, categoryApi, Ledger, Transaction, Category } from "@/lib/supabase-client"
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,7 +32,7 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
   const [error, setError] = useState(false)
   const { toast } = useToast()
 
-  const handleCategoryChange = async (txId: number | undefined, newCategory: string, originalTx: any) => {
+  const handleCategoryChange = async (txId: string | undefined, newCategory: string, originalTx: any) => {
     if (!txId || !originalTx) return;
     try {
       // Remove any navigation properties like 'ledger' or 'runningBalance' that could break the API
@@ -49,7 +49,7 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
 
       await transactionApi.update(txId, payload);
       toast({ title: "Category Updated", description: "The transaction category was updated successfully." });
-      setLedger(prev => {
+      setLedger((prev: Ledger | null) => {
         if (!prev) return prev;
         return {
           ...prev,
@@ -62,17 +62,17 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
     }
   }
 
-  const handleDelete = async (txId: number | undefined) => {
+  const handleDelete = async (txId: string | undefined) => {
     if (!txId) return;
     if (!window.confirm("Are you sure you want to delete this transaction?")) return;
     try {
       await transactionApi.delete(txId);
       toast({ title: "Deleted", description: "Transaction removed." });
-      setLedger(prev => {
+      setLedger((prev: Ledger | null) => {
         if (!prev) return prev;
         return {
           ...prev,
-          transactions: prev.transactions?.filter(t => t.id !== txId)
+          transactions: prev.transactions?.filter((t: Transaction) => t.id !== txId)
         }
       });
     } catch (e: any) {
@@ -86,7 +86,7 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
     const fetchLedger = async () => {
       try {
         setIsLoading(true)
-        const data = await ledgerApi.getById(Number(id))
+        const data = await ledgerApi.getById(id)
         setLedger(data)
         
         // If the ledger has transactions included, use them, otherwise fetch separately
@@ -94,7 +94,7 @@ export default function LedgerDetailsPage({ params }: { params: Promise<{ id: st
           setTransactions(data.transactions)
         } else {
           try {
-            const txData = await transactionApi.getByLedgerId(Number(id))
+            const txData = await transactionApi.getByLedgerId(id)
             setTransactions(txData.items || [])
           } catch (txErr) {
             console.error("Failed to fetch transactions separately:", txErr)

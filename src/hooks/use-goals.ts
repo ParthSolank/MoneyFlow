@@ -1,6 +1,8 @@
 import useSWR from 'swr';
 import { goalApi, Goal, GoalContribution } from '@/lib/supabase-client';
 
+export type { Goal, GoalContribution };
+
 export function useGoals() {
   const { data, error, mutate } = useSWR<Goal[]>(
     'supabase/goals', 

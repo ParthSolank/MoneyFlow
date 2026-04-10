@@ -123,24 +123,30 @@ export interface FinancialYear {
 }
 
 export interface Goal {
-    id?: string;
+    id: string;
     name: string;
+    title?: string; // Compatibility alias
     targetAmount: number;
     currentAmount: number;
     deadline?: string;
     description?: string;
+    category?: string; // Added category
     icon?: string;
     color?: string;
+    ledgerId?: number | string;
     createdAt?: string;
     updatedAt?: string;
 }
 
 export interface GoalContribution {
-    id?: string;
+    id: string;
     goalId: string;
     amount: number;
     date: string;
+    contributionDate?: string; // Compatibility alias
     note?: string;
+    notes?: string; // Compatibility alias
+    ledger?: { name: string };
     createdAt?: string;
 }
 
@@ -345,6 +351,61 @@ export const transactionApi = {
             balance: totalIncome - totalExpenses,
             totalBalance: totalIncome - totalExpenses,
         };
+    },
+
+    // Get category breakdown
+    getCategoryBreakdown: async (type: 'income' | 'expense' = 'expense'): Promise<any[]> => {
+        const userId = await getCurrentUserId();
+        const { data, error } = await supabase
+            .from('transactions')
+            .select('category, amount')
+            .eq('user_id', userId)
+            .eq('type', type);
+
+        if (error) throw new Error(error.message);
+
+        const breakdown: Record<string, { category: string, amount: number, count: number }> = {};
+        (data || []).forEach(tx => {
+            if (!breakdown[tx.category]) {
+                breakdown[tx.category] = { category: tx.category, amount: 0, count: 0 };
+            }
+            breakdown[tx.category].amount += parseFloat(tx.amount);
+            breakdown[tx.category].count += 1;
+        });
+
+        return Object.values(breakdown).sort((a, b) => b.amount - a.amount);
+    },
+
+    // Get monthly trends
+    getMonthlyTrends: async (): Promise<any[]> => {
+        const userId = await getCurrentUserId();
+        const { data, error } = await supabase
+            .from('transactions')
+            .select('date, type, amount')
+            .eq('user_id', userId)
+            .order('date', { ascending: true });
+
+        if (error) throw new Error(error.message);
+
+        const trends: Record<string, { month: string, income: number, expense: number, savings: number }> = {};
+        (data || []).forEach(tx => {
+            const date = new Date(tx.date);
+            const month = date.toLocaleString('default', { month: 'short', year: '2-digit' });
+            
+            if (!trends[month]) {
+                trends[month] = { month, income: 0, expense: 0, savings: 0 };
+            }
+            
+            const amount = parseFloat(tx.amount);
+            if (tx.type === 'income') {
+                trends[month].income += amount;
+            } else {
+                trends[month].expense += amount;
+            }
+            trends[month].savings = trends[month].income - trends[month].expense;
+        });
+
+        return Object.values(trends);
     },
 
     // Create transaction
@@ -1117,17 +1178,19 @@ export const goalApi = {
             .order('created_at', { ascending: false });
 
         if (error) throw new Error(error.message);
-        return (data || []).map(g => ({
-            id: g.id,
-            name: g.name,
-            targetAmount: parseFloat(g.target_amount),
-            currentAmount: parseFloat(g.current_amount),
-            deadline: g.deadline,
-            description: g.description,
-            icon: g.icon,
-            color: g.color,
-            createdAt: g.created_at,
-            updatedAt: g.updated_at,
+        return (data || []).map(goal => ({
+            id: goal.id,
+            name: goal.name,
+            title: goal.name,
+            targetAmount: parseFloat(goal.target_amount),
+            currentAmount: parseFloat(goal.current_amount),
+            deadline: goal.deadline,
+            description: goal.description,
+            icon: goal.icon,
+            color: goal.color,
+            ledgerId: goal.ledger_id,
+            createdAt: goal.created_at,
+            updatedAt: goal.updated_at,
         }));
     },
 
@@ -1144,12 +1207,14 @@ export const goalApi = {
         return {
             id: data.id,
             name: data.name,
+            title: data.name,
             targetAmount: parseFloat(data.target_amount),
             currentAmount: parseFloat(data.current_amount),
             deadline: data.deadline,
             description: data.description,
             icon: data.icon,
             color: data.color,
+            ledgerId: data.ledger_id,
             createdAt: data.created_at,
             updatedAt: data.updated_at,
         };
@@ -1161,13 +1226,14 @@ export const goalApi = {
             .from('goals')
             .insert({
                 user_id: userId,
-                name: goal.name,
+                name: goal.name || (goal as any).title,
                 target_amount: goal.targetAmount,
                 current_amount: goal.currentAmount || 0,
                 deadline: goal.deadline,
                 description: goal.description,
                 icon: goal.icon || 'Target',
                 color: goal.color || '#10B981',
+                ledger_id: goal.ledgerId,
             })
             .select()
             .single();
@@ -1176,12 +1242,14 @@ export const goalApi = {
         return {
             id: data.id,
             name: data.name,
+            title: data.name,
             targetAmount: parseFloat(data.target_amount),
             currentAmount: parseFloat(data.current_amount),
             deadline: data.deadline,
             description: data.description,
             icon: data.icon,
             color: data.color,
+            ledgerId: data.ledger_id,
             createdAt: data.created_at,
             updatedAt: data.updated_at,
         };
@@ -1190,13 +1258,14 @@ export const goalApi = {
     update: async (id: string, goal: Partial<Goal>): Promise<void> => {
         const userId = await getCurrentUserId();
         const updateData: any = {};
-        if (goal.name) updateData.name = goal.name;
+        if (goal.name || (goal as any).title) updateData.name = goal.name || (goal as any).title;
         if (goal.targetAmount !== undefined) updateData.target_amount = goal.targetAmount;
         if (goal.currentAmount !== undefined) updateData.current_amount = goal.currentAmount;
         if (goal.deadline !== undefined) updateData.deadline = goal.deadline;
         if (goal.description !== undefined) updateData.description = goal.description;
         if (goal.icon) updateData.icon = goal.icon;
         if (goal.color) updateData.color = goal.color;
+        if (goal.ledgerId !== undefined) updateData.ledger_id = goal.ledgerId;
 
         const { error } = await supabase
             .from('goals')
@@ -1232,7 +1301,10 @@ export const goalApi = {
             goalId: c.goal_id,
             amount: parseFloat(c.amount),
             date: c.date,
+            contributionDate: c.date,
             note: c.note,
+            notes: c.note,
+            ledger: c.ledgers ? { name: c.ledgers.name } : undefined,
             createdAt: c.created_at,
         }));
     },
@@ -1255,7 +1327,9 @@ export const goalApi = {
             goalId: data.goal_id,
             amount: parseFloat(data.amount),
             date: data.date,
+            contributionDate: data.date,
             note: data.note,
+            notes: data.note,
             createdAt: data.created_at,
         };
     },

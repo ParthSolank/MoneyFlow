@@ -23,7 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { categoryApi, Category } from "@/lib/api-client";
+import { categoryApi, Category } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useAuth } from "@/context/auth-context";
@@ -39,7 +39,7 @@ export default function CategoriesPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
 
     // Form state
@@ -49,14 +49,14 @@ export default function CategoriesPage() {
         icon: string;
         color: string;
         keywords: string;
-        parentId: string;
+        parentId: string | null;
     }>({
         name: "",
         type: "expense",
         icon: "Tag",
         color: "#6366f1",
         keywords: "",
-        parentId: "none"
+        parentId: null
     });
 
     useEffect(() => {
@@ -84,7 +84,7 @@ export default function CategoriesPage() {
                 icon: category.icon,
                 color: category.color,
                 keywords: category.keywords || "",
-                parentId: category.parentId?.toString() || "none"
+                parentId: category.parentId?.toString() || null
             });
         } else {
             setEditingCategory(null);
@@ -94,7 +94,7 @@ export default function CategoriesPage() {
                 icon: "Tag",
                 color: "#6366f1",
                 keywords: "",
-                parentId: "none"
+                parentId: null
             });
         }
         setIsDialogOpen(true);
@@ -107,13 +107,13 @@ export default function CategoriesPage() {
             if (editingCategory) {
                 await categoryApi.update(editingCategory.id, {
                     ...formData,
-                    parentId: formData.parentId === "none" ? undefined : parseInt(formData.parentId)
+                    parentId: (formData.parentId === "none" || !formData.parentId) ? undefined : formData.parentId
                 });
                 toast({ title: "Success", description: "Category updated successfully" });
             } else {
                 await categoryApi.create({
                     ...formData,
-                    parentId: formData.parentId === "none" ? undefined : parseInt(formData.parentId)
+                    parentId: (formData.parentId === "none" || !formData.parentId) ? undefined : formData.parentId
                 });
                 toast({ title: "Success", description: "Category created successfully" });
             }
@@ -126,7 +126,9 @@ export default function CategoriesPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.preventDefault();
+        setIsSubmitting(true);
         if (!confirm("Are you sure you want to delete this category? All sub-categories will be unlinked.")) return;
         try {
             await categoryApi.delete(id);
@@ -134,6 +136,8 @@ export default function CategoriesPage() {
             fetchCategories();
         } catch (error) {
             toast({ title: "Error", description: "Failed to delete category", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -239,8 +243,8 @@ export default function CategoriesPage() {
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 ml-1">Parent Category</label>
                                         <Select
-                                            value={formData.parentId}
-                                            onValueChange={(v) => setFormData({ ...formData, parentId: v })}
+                                            value={formData.parentId || "none"}
+                                            onValueChange={(v) => setFormData({ ...formData, parentId: v === "none" ? null : v })}
                                         >
                                             <SelectTrigger className="h-12 rounded-xl border-gray-200">
                                                 <SelectValue placeholder="None" />
@@ -384,7 +388,7 @@ export default function CategoriesPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={() => handleDelete(category.id)}
+                                                        onClick={(e) => handleDelete(e, category.id)}
                                                         className="h-9 w-9 rounded-lg text-gray-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30"
                                                     >
                                                         <Trash2 className="h-4 w-4" />

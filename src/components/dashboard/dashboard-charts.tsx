@@ -20,7 +20,7 @@ import { useCategoryBreakdown, useWealthDistribution } from "@/hooks/use-stats";
 import { useState, useMemo } from "react";
 import { SpendingHeatmap } from "./spending-heatmap";
 import { useTransactions } from "@/hooks/use-transactions";
-import { Transaction } from "@/lib/api-client";
+import { Transaction } from "@/lib/supabase-client";
 
 interface DashboardChartsProps {
     startDate?: string;

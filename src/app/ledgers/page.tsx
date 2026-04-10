@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
-import { Ledger, ledgerApi } from "@/lib/api-client"
+import { Ledger, ledgerApi } from "@/lib/supabase-client"
 import { motion, AnimatePresence } from "framer-motion"
 
 const iconMap: Record<string, any> = {
@@ -132,7 +132,7 @@ export default function LedgersPage() {
         accountType: accountType as 'bank' | 'credit'
       };
 
-      await ledgerApi.update(Number(editingLedger.id), updateData)
+      await ledgerApi.update(editingLedger.id, updateData)
 
       setLedgers(prev => prev.map(l => l.id === editingLedger.id ? { ...l, ...updateData } : l))
 
@@ -150,7 +150,7 @@ export default function LedgersPage() {
   const handleDeleteLedger = async (id: string | number) => {
     try {
       if (!id) return;
-      await ledgerApi.delete(Number(id))
+      await ledgerApi.delete(id.toString())
       setLedgers(prev => prev.filter(l => l.id !== id))
       toast({ title: "Ledger Removed" })
     } catch (err) {

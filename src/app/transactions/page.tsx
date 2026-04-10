@@ -227,7 +227,7 @@ export default function TransactionsPage() {
     }
   }
 
-  const handlePdfDownload = async (id: number) => {
+  const handlePdfDownload = async (id: string) => {
     try {
       const blob = await transactionApi.generatePdf(id);
       const url = window.URL.createObjectURL(blob);

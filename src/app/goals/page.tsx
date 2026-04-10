@@ -25,7 +25,7 @@ export default function GoalsPage() {
     setIsAddOpen(true)
   }
 
-  const handleDelete = async (e: React.MouseEvent, id: number) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     if (confirm("Are you sure you want to delete this goal?")) {
       try {
@@ -172,11 +172,11 @@ export default function GoalsPage() {
                       )}
                     </div>
                     
-                    {goal.ledger && (
+                    {goal.ledgerId && (
                       <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-xl border border-gray-100">
                         <Wallet className="w-3.5 h-3.5 text-purple-600" />
                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter truncate">
-                          Linked: {goal.ledger.name}
+                          Linked Ledger ID: {goal.ledgerId}
                         </span>
                       </div>
                     )}

@@ -23,10 +23,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { budgetApi, categoryApi, Category, BudgetStatus } from "@/lib/api-client";
+import { budgetApi, categoryApi, Category, BudgetStatus } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
-import { BASE_URL } from "@/lib/api";
+const BASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 
 export default function BudgetsPage() {
     const { toast } = useToast();
@@ -72,7 +72,7 @@ export default function BudgetsPage() {
 
     // Form state
     const [formData, setFormData] = useState({
-        categoryId: 0,
+        categoryId: "",
         amount: 0,
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear()
@@ -101,7 +101,7 @@ export default function BudgetsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (formData.categoryId === 0) {
+        if (!formData.categoryId) {
             toast({ title: "Error", description: "Please select a category", variant: "destructive" });
             return;
         }
@@ -118,7 +118,8 @@ export default function BudgetsPage() {
         }
     };
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
         if (!confirm("Remove this budget?")) return;
         try {
             await budgetApi.delete(id);
@@ -210,7 +211,7 @@ export default function BudgetsPage() {
                                 <div className="space-y-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">Category</label>
-                                        <Select onValueChange={(v) => setFormData({ ...formData, categoryId: parseInt(v) })}>
+                                        <Select onValueChange={(v) => setFormData({ ...formData, categoryId: v })}>
                                             <SelectTrigger className="h-12 rounded-xl">
                                                 <SelectValue placeholder="Choose category" />
                                             </SelectTrigger>
@@ -280,7 +281,7 @@ export default function BudgetsPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={() => handleDelete(stat.id)}
+                                                        onClick={(e) => handleDelete(e, stat.id)}
                                                         className="h-8 w-8 text-gray-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all rounded-full"
                                                     >
                                                         <Trash2 className="h-4 w-4" />

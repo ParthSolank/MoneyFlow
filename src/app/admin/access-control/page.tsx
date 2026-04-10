@@ -8,7 +8,7 @@ import { ShieldAlert, Save, XCircle, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
-import { userApi, User } from "@/lib/api-client"
+import { userApi, User } from "@/lib/supabase-client"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Switch } from "@/components/ui/switch"
@@ -108,7 +108,7 @@ export default function AccessControlPage() {
         try {
             setIsSaving(true);
             const updatedRightsArray = Array.from(rightsMap);
-            await userApi.update(parseInt(selectedUserId), {
+            await userApi.update(selectedUserId, {
                 username: user.username,
                 role: user.role,
                 status: user.status,

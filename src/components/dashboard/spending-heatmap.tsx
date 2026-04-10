@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Transaction } from "@/lib/api-client";
+import { Transaction } from "@/lib/supabase-client";
 import { Flame, Info } from "lucide-react";
 
 interface SpendingHeatmapProps {

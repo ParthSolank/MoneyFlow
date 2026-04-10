@@ -43,8 +43,8 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
     try {
       await addContribution(goal.id, {
         amount: parseFloat(formData.amount),
-        ledgerId: formData.ledgerId ? parseInt(formData.ledgerId) : undefined,
-        notes: formData.notes
+        date: new Date().toISOString().split('T')[0],
+        note: formData.notes
       })
       
       toast({
@@ -198,7 +198,7 @@ export function GoalHistoryModal({ isOpen, onClose, goal }: GoalHistoryModalProp
                       <div className="flex justify-between items-start mb-1">
                         <p className="text-lg font-black text-gray-900">₹{item.amount.toLocaleString()}</p>
                         <time className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">
-                          {format(new Date(item.contributionDate), 'MMM d, yyyy • p')}
+                          {format(new Date(item.date), 'MMM d, yyyy • p')}
                         </time>
                       </div>
                       <div className="flex flex-wrap gap-3 items-center mt-2">

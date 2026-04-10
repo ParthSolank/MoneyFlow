@@ -2,7 +2,7 @@
  * Utility functions for exporting data to various formats
  */
 
-import { Transaction } from "./api-client";
+import { Transaction } from "./supabase-client";
 
 /**
  * Converts a list of transactions to a CSV string and triggers a download

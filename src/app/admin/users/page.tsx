@@ -9,7 +9,7 @@ import { Users, UserPlus, Shield, Mail, Calendar, MoreVertical, Trash2, Edit2, S
 import { motion } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
-import { userApi, User } from "@/lib/api-client"
+import { userApi, User } from "@/lib/supabase-client"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -144,7 +144,7 @@ export default function UserManagementPage() {
         }
     };
 
-    const handleDeleteUser = async (id: number) => {
+    const handleDeleteUser = async (id: string) => {
         if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
 
         try {

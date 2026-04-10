@@ -8,7 +8,7 @@ import { ShieldAlert, Loader2, Calendar, FileText, User } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
-import { auditApi, AuditLog } from "@/lib/api-client"
+import { auditApi, AuditLog } from "@/lib/supabase-client"
 import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/use-permissions";
 

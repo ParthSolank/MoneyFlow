@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { companyApi, financialYearApi, Company, FinancialYear } from "@/lib/api-client"
+import { companyApi, financialYearApi, Company, FinancialYear } from "@/lib/supabase-client"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,7 +25,7 @@ export default function MastersPage() {
     const [companies, setCompanies] = useState<Company[]>([])
     const [loadingCompany, setLoadingCompany] = useState(true)
     const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false)
-    const [editingCompanyId, setEditingCompanyId] = useState<number | null>(null)
+    const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null)
     const [companyForm, setCompanyForm] = useState<Omit<Company, 'id' | 'createdAt' | 'updatedAt'>>({
         name: "",
         description: "",
@@ -41,7 +41,7 @@ export default function MastersPage() {
     const [financialYears, setFinancialYears] = useState<FinancialYear[]>([])
     const [loadingFY, setLoadingFY] = useState(true)
     const [isFYDialogOpen, setIsFYDialogOpen] = useState(false)
-    const [editingFYId, setEditingFYId] = useState<number | null>(null)
+    const [editingFYId, setEditingFYId] = useState<string | null>(null)
     const [fyForm, setFyForm] = useState<Omit<FinancialYear, 'id' | 'createdAt' | 'updatedAt'>>({
         name: "",
         startDate: new Date().toISOString().split('T')[0],
@@ -87,7 +87,7 @@ export default function MastersPage() {
         setIsSubmitting(true)
         try {
             if (editingCompanyId) {
-                await companyApi.update(editingCompanyId, companyForm)
+                await companyApi.update(editingCompanyId!, companyForm)
                 toast({ title: "Success", description: "Company updated successfully" })
             } else {
                 await companyApi.create(companyForm)
@@ -117,7 +117,7 @@ export default function MastersPage() {
         setIsCompanyDialogOpen(true)
     }
 
-    const handleDeleteCompany = async (id: number) => {
+    const handleDeleteCompany = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this company?")) return
         try {
             await companyApi.delete(id)
@@ -134,7 +134,7 @@ export default function MastersPage() {
         setIsSubmitting(true)
         try {
             if (editingFYId) {
-                await financialYearApi.update(editingFYId, fyForm)
+                await financialYearApi.update(editingFYId!, fyForm)
                 toast({ title: "Success", description: "Financial Year updated successfully" })
             } else {
                 await financialYearApi.create(fyForm)
@@ -161,7 +161,7 @@ export default function MastersPage() {
         setIsFYDialogOpen(true)
     }
 
-    const handleDeleteFY = async (id: number) => {
+    const handleDeleteFY = async (id: string) => {
         if (!window.confirm("Are you sure you want to delete this Financial Year?")) return
         try {
             await financialYearApi.delete(id)

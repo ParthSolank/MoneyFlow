@@ -42,9 +42,9 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
   React.useEffect(() => {
     if (goal) {
       setFormData({
-        title: goal.title,
-        targetAmount: goal.targetAmount.toString(),
-        currentAmount: goal.currentAmount.toString(),
+        title: goal.title || goal.name || "",
+        targetAmount: (goal.targetAmount || 0).toString(),
+        currentAmount: (goal.currentAmount || 0).toString(),
         deadline: goal.deadline ? goal.deadline.split('T')[0] : "",
         category: goal.category || "",
         color: goal.color || "#4f46e5",
@@ -79,6 +79,7 @@ export function GoalModal({ isOpen, onClose, goal }: GoalModalProps) {
     setIsSubmitting(true)
     try {
       const data = {
+        name: formData.title,
         title: formData.title,
         targetAmount: parseFloat(formData.targetAmount),
         currentAmount: parseFloat(formData.currentAmount),
