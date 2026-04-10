@@ -23,11 +23,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Transaction, Ledger, Category, transactionApi, categoryApi } from "@/lib/api-client";
+import { Transaction, Ledger, Category, transactionApi, categoryApi } from "@/lib/supabase-client";
 import { useTransactions } from "@/hooks/use-transactions";
 import { exportTransactionsToCSV } from "@/lib/export-utils";
 import { FYSelector } from "@/components/fy-selector";
 import { getCurrentFinancialYear } from "@/lib/financial-year-utils";
+import { ImportStatementModal } from "@/components/transactions/import-statement-modal";
 
 import { useAuth } from "@/context/auth-context";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -43,14 +44,11 @@ export default function TransactionsPage() {
   // Form State
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isImporting, setIsImporting] = useState(false)
-  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [ledgers, setLedgers] = useState<Ledger[]>([])
   const [dbCategories, setDbCategories] = useState<Category[]>([])
-  const [importLedgerId, setImportLedgerId] = useState<string>("none")
-  const [importFile, setImportFile] = useState<File | null>(null)
 
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     description: "",
@@ -70,7 +68,7 @@ export default function TransactionsPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    import("@/lib/api-client").then(({ ledgerApi, categoryApi }) => {
+    import("@/lib/supabase-client").then(({ ledgerApi, categoryApi }) => {
       ledgerApi.getAll().then((data) => {
         setLedgers(data);
       }).catch(console.error);
@@ -157,7 +155,7 @@ export default function TransactionsPage() {
         amount: parseFloat(formData.amount),
         type: formData.type as 'income' | 'expense',
         paymentMethod: formData.paymentMethod as 'bank' | 'credit' | 'cash',
-        ledgerId: parseInt(formData.ledgerId)
+        ledgerId: formData.ledgerId || undefined
       };
 
       if (editingId) {
@@ -217,7 +215,7 @@ export default function TransactionsPage() {
     setTimeout(() => setIsOpen(true), 350);
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this transaction?")) return;
 
     try {
@@ -228,26 +226,6 @@ export default function TransactionsPage() {
       toast({ variant: "destructive", title: "Error", description: "Could not delete the transaction." });
     }
   }
-
-  const handleImportSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!importFile) return;
-
-    try {
-      setIsImporting(true);
-      const ledgerIdParam = importLedgerId && importLedgerId !== "none" ? Number(importLedgerId) : undefined;
-      await transactionApi.importFile(importFile, ledgerIdParam);
-      toast({ title: "Success", description: "Transactions imported successfully from file." });
-      mutate();
-      setIsImportOpen(false);
-      setImportFile(null);
-      setImportLedgerId("none");
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Import Failed", description: error.message });
-    } finally {
-      setIsImporting(false);
-    }
-  };
 
   const handlePdfDownload = async (id: number) => {
     try {
@@ -298,51 +276,16 @@ export default function TransactionsPage() {
           </div>
           <div className="flex gap-2">
             <div className="flex gap-2">
-              <Dialog open={isImportOpen} onOpenChange={(open) => {
-                setIsImportOpen(open);
-                if (!open) {
-                  setTimeout(() => { document.body.style.pointerEvents = ""; }, 500);
-                }
-              }}>
-                <DialogTrigger asChild>
-                  {canCreate("CORE", "TRANSACTIONS") && (
-                    <Button variant="outline" className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50" disabled={isImporting}>
-                      <UploadCloud className="h-4 w-4" />
-                      Import File
-                    </Button>
-                  )}
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <form onSubmit={handleImportSubmit}>
-                    <DialogHeader>
-                      <DialogTitle>Import Transactions</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label>Select Account (Optional)</Label>
-                        <Select value={importLedgerId} onValueChange={setImportLedgerId}>
-                          <SelectTrigger><SelectValue placeholder="No specific ledger selected" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No Specific Ledger</SelectItem>
-                            {ledgers.map(l => (
-                              <SelectItem key={l.id} value={l.id?.toString() || ""}>{l.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>Upload File</Label>
-                        <Input type="file" accept=".csv, .xls, .xlsx" onChange={(e) => setImportFile(e.target.files?.[0] || null)} required />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit" disabled={isImporting || !importFile} className="w-full">
-                        {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Start Import"}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              {canCreate("CORE", "TRANSACTIONS") && (
+                <Button 
+                  variant="outline" 
+                  className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  onClick={() => setIsImportModalOpen(true)}
+                >
+                  <UploadCloud className="h-4 w-4" />
+                  Import Statement
+                </Button>
+              )}
 
               <Button
                 variant="outline"
@@ -373,7 +316,7 @@ export default function TransactionsPage() {
               }}>
                 <DialogTrigger asChild>
                   {canCreate("CORE", "TRANSACTIONS") && (
-                    <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-none transition-all hover:shadow-lg hover:-translate-y-0.5" disabled={isImporting}>
+                    <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-none transition-all hover:shadow-lg hover:-translate-y-0.5">
                       <Plus className="h-4 w-4" />
                       Add Transaction
                     </Button>
@@ -773,6 +716,14 @@ export default function TransactionsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Import Statement Modal */}
+      <ImportStatementModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        onSuccess={() => mutate()}
+        ledgers={ledgers.map(l => ({ id: l.id!, name: l.name }))}
+      />
     </motion.div >
   )
 }
